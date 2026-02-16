@@ -1,6 +1,6 @@
 to install:
 
-For Debian/Ubuntu:
+For Debian/Ubuntu
 
 	sudo apt update
 	sudo apt install python3 python3-pip -y
