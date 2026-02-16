@@ -1,0 +1,54 @@
+{
+    "background_color": "#0b0b1a",
+    "button_color": "#222244",
+    "button_hover_color": "#55ff55",
+    "main_title": "🪁 My C-h-r-o-n-o-s Dashboard",
+    "home_button_icon": "🏠",
+    "back_button_icon": "⬅️",
+    "search_placeholder": "Search folders/files...",
+
+    "dashboard_files_hidden": true,
+    "dashboard_file_names": [
+        "dashboard.sh",
+        "dashboard.py",
+        "config.json",
+        "dashboard.log",
+        "dashboard.pid",
+        "logo.png",
+        "static",
+        "webhost",
+        "logo.svg",
+        "bg.png",
+        "chronos.png",
+        "logo_small.png"
+    ],
+
+    "users": [
+        {"name": "name", "email": "email", "password": "password"}
+
+    ],
+
+    "custom_emojis": {
+        "folders": {
+            "music": "🎧",
+            "videos": "🎬",
+            "backups": "💾",
+            "static": "🧱"
+        },
+        "files": {
+            "config.json": "⚙️",
+            "dashboard.log": "🧾",
+            "dashboard.pid": "🆔",
+            "README.md": "📘"
+        },
+        "extensions": {
+            ".py": "🐍",
+            ".sh": "🖥️",
+            ".json": "🧩",
+            ".zip": "🗜️",
+            ".png": "🖼️",
+            ".mp3": "🎵",
+            ".wav": "🎶"
+        }
+    }
+}

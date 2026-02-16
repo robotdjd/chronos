@@ -1,0 +1,21 @@
+to start and stop the webpage... (http://chronos.local)
+
+remove "sudo" and "." sparingly 
+
+sudo ./mnt/sda1/shared/dashboard.sh start
+sudo ./mnt/sda1/shared/dashboard.sh reboot
+sudo ./mnt/sda1/shared/dashboard.sh stop
+
+
+if you reboot the server...
+
+Mount driveNext, mount the drive to make it available to the file system on your Raspberry Pi:
+$ sudo mount /dev/sda1
+And ensure that the drive is mounted after each boot:
+$ sudo nano /etc/fstab
+Add the following line at the end of the file:
+/dev/sda1 /mnt/sda1/ ext4 defaults,noatime 0 1
+Press Ctrl+X, then Y, and finally Enter to save the edited file with nano.
+
+ls is your friend
+
