@@ -25,6 +25,10 @@ restart:
 
 helpful hidden pages
 
+how to make custom pages:
+
 	http://chronos.local/customhtmlpages
+
+info page
 
 	http://chronos.local/info
