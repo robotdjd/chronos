@@ -22,3 +22,9 @@ stop:
 restart:
 
 	sudo /mnt/sda1/shared/dashboard.sh reboot
+
+helpful hidden pages
+
+	http://chronos.local/customhtmlpages
+
+	http://chronos.local/info
