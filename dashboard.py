@@ -1,3 +1,5 @@
+version = "beta 1.2"
+
 #!/usr/bin/env python3
 import os
 import json
@@ -18,6 +20,69 @@ from werkzeug.utils import secure_filename
 from flask import render_template_string
 from datetime import datetime
 import subprocess
+import time
+from flask import jsonify
+from flask import Flask, send_from_directory
+import platform
+import threading
+#from mitmproxy import http
+#from dnslib.server import DNSServer, BaseResolver, DNSHandler
+#from dnslib import RR, QTYPE, A
+
+
+
+#-------loading bar--------#
+
+def print_banner():
+    print("=" * 60)
+    print("                    MY  CHRONOS  DASHBOARD")
+    print("=" * 60)
+    print()
+    print("   ██████╗██╗  ██╗██████╗  ██████╗ ███╗   ██╗ ██████╗ ███████╗")
+    print("  ██╔════╝██║  ██║██╔══██╗██╔═══██╗████╗  ██║██╔═══██╗██╔════╝")
+    print("  ██║     ███████║██████╔╝██║   ██║██╔██╗ ██║██║   ██║███████╗")
+    print("  ██║     ██╔══██║██╔══██╗██║   ██║██║╚██╗██║██║   ██║╚════██║")
+    print("  ╚██████╗██║  ██║██║  ██║╚██████╔╝██║ ╚████║╚██████╔╝███████║")
+    print("   ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝ ╚══════╝")
+    print()
+    print("            Initializing...")
+    print()
+    
+    
+    print()
+    print()
+
+    print("    ███╗   ███╗ █████╗ ██████╗ ███████╗     ██████╗ ██╗   ██╗")
+    print("    ████╗ ████║██╔══██╗██╔══██╗██╔════╝     ██╔══██╗╚██╗ ██╔╝")
+    print("    ██╔████╔██║███████║██║  ██║█████╗       ██████╔╝ ╚████╔╝ ")
+    print("    ██║╚██╔╝██║██╔══██║██║  ██║██╔══╝       ██╔══██╗  ╚██╔╝  ")
+    print("    ██║ ╚═╝ ██║██║  ██║██████╔╝███████╗     ██████╔╝   ██║   ")
+    print("    ╚═╝     ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝     ╚═════╝    ╚═╝   ")
+
+    print()
+        
+    time.sleep(1)
+    
+    print("    ██████╗  ██████╗ ██████╗  ██████╗ ████████╗██████╗      ██╗██████╗ ")
+    print("    ██╔══██╗██╔═══██╗██╔══██╗██╔═══██╗╚══██╔══╝██╔══██╗     ██║██╔══██╗")
+    print("    ██████╔╝██║   ██║██████╔╝██║   ██║   ██║   ██║  ██║     ██║██║  ██║")
+    print("    ██╔══██╗██║   ██║██╔══██╗██║   ██║   ██║   ██║  ██║██   ██║██║  ██║")
+    print("    ██║  ██║╚██████╔╝██████╔╝╚██████╔╝   ██║   ██████╔╝╚█████╔╝██████╔╝")
+    print("    ╚═╝  ╚═╝ ╚═════╝ ╚═════╝  ╚═════╝    ╚═╝   ╚═════╝  ╚════╝ ╚═════╝ ")
+
+
+def loading_bar(duration=3, bar_length=40):
+    for i in range(bar_length + 1):
+        percent = int((i / bar_length) * 100)
+        bar = "█" * i + "-" * (bar_length - i)
+        sys.stdout.write(f"\r            [{bar}] {percent}%")
+        sys.stdout.flush()
+        time.sleep(duration / bar_length)
+    print("\n\n            ✔ Environment Ready.\n")
+    
+print_banner()
+loading_bar(duration=4)
+
 
 
 app = Flask(__name__)
@@ -30,6 +95,161 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.join(BASE_DIR, "config.json")
 
 REBOOT_DELAY = 10  # seconds
+
+text_rdjd = """
+
+██████╗  ██████╗ ██████╗  ██████╗ ████████╗██████╗      ██╗██████╗ 
+██╔══██╗██╔═══██╗██╔══██╗██╔═══██╗╚══██╔══╝██╔══██╗     ██║██╔══██╗
+██████╔╝██║   ██║██████╔╝██║   ██║   ██║   ██║  ██║     ██║██║  ██║
+██╔══██╗██║   ██║██╔══██╗██║   ██║   ██║   ██║  ██║██   ██║██║  ██║
+██║  ██║╚██████╔╝██████╔╝╚██████╔╝   ██║   ██████╔╝╚█████╔╝██████╔╝
+╚═╝  ╚═╝ ╚═════╝ ╚═════╝  ╚═════╝    ╚═╝   ╚═════╝  ╚════╝ ╚═════╝ 
+
+
+"""
+
+text_chronos = """
+
+   ███╗   ███╗██╗   ██╗     ██████╗██╗  ██╗██████╗  ██████╗ ███╗   ██╗ ██████╗ ███████╗
+   ████╗ ████║╚██╗ ██╔╝    ██╔════╝██║  ██║██╔══██╗██╔═══██╗████╗  ██║██╔═══██╗██╔════╝
+   ██╔████╔██║ ╚████╔╝     ██║     ███████║██████╔╝██║   ██║██╔██╗ ██║██║   ██║███████╗
+   ██║╚██╔╝██║  ╚██╔╝      ██║     ██╔══██║██╔══██╗██║   ██║██║╚██╗██║██║   ██║╚════██║
+   ██║ ╚═╝ ██║   ██║       ╚██████╗██║  ██║██║  ██║╚██████╔╝██║ ╚████║╚██████╔╝███████║
+   ╚═╝     ╚═╝   ╚═╝        ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝ ╚══════╝
+
+                         D A S H B O A R D
+
+
+"""
+
+REQUIRED_PACKAGES = [
+    "flask",
+    "werkzeug",
+    "authlib",
+    "requests"
+]
+
+# ---------------- UI ---------------- #
+
+def print_banner():
+    print("=" * 55)
+    print("         Flask Project Auto Installer")
+    print("=" * 55)
+    print()
+
+def loading_bar(duration=3, bar_length=40, text="Processing"):
+    for i in range(bar_length + 1):
+        percent = int((i / bar_length) * 100)
+        bar = "█" * i + "-" * (bar_length - i)
+        sys.stdout.write(f"\r   {text:<15} [{bar}] {percent}%")
+        sys.stdout.flush()
+        time.sleep(duration / bar_length)
+    print("\n")
+
+# ---------------- CORE ---------------- #
+
+def check_python_version():
+    print("🔎 Checking Python version...")
+    loading_bar(1.5, text="Checking")
+    if sys.version_info < (3, 8):
+        print("❌ Python 3.8 or higher is required.")
+        sys.exit(1)
+    print(f"✅ Python version OK: {platform.python_version()}\n")
+
+def upgrade_pip():
+    print("⬆ Upgrading pip...")
+    loading_bar(2, text="Upgrading pip")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "pip"])
+    print("✅ pip upgraded successfully.\n")
+
+def install_package(package):
+    print(f"📦 Installing {package}...")
+    loading_bar(2.5, text=f"Installing {package}")
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+        print(f"✅ {package} installed successfully.\n")
+    except subprocess.CalledProcessError:
+        print(f"❌ Failed to install {package}\n")
+
+def install_dept():
+    print_banner()
+    loading_bar(duration=2, text="Initializing")
+
+    check_python_version()
+    upgrade_pip()
+
+    for package in REQUIRED_PACKAGES:
+        install_package(package)
+
+    print("🎉 Environment Ready.")
+    print("=" * 55)
+
+# ---------------- START ---------------- #
+
+#install_dept() //does not work for rpi
+
+"""
+BLOCK_CONFIG_PATH = "/mnt/sda1/shared/WebHost/blockpage/block_config.json"
+FLASK_IP = "192.168.1.10"  # IP running your Flask app / proxy
+
+with open(BLOCK_CONFIG_PATH) as f:
+    block_config = json.load(f)
+
+blocked_sites = block_config.get("blocked_sites", [])
+warning_sites = block_config.get("warning_sites", [])
+
+class BlockResolver(BaseResolver):
+    def resolve(self, request, handler):
+        qname = str(request.q.qname)[:-1].lower()
+        reply = request.reply()
+        if any(site in qname for site in blocked_sites + warning_sites):
+            # Redirect blocked/warning domains to Flask/proxy IP
+            reply.add_answer(RR(qname, QTYPE.A, rdata=A(FLASK_IP), ttl=60))
+        else:
+            # For allowed domains, fallback to real DNS (e.g., Google)
+            reply.add_answer(RR(qname, QTYPE.A, rdata=A("8.8.8.8"), ttl=60))
+        return reply
+
+resolver = BlockResolver()
+server = DNSServer(resolver, port=53, address="0.0.0.0")
+server.start_thread()
+print("DNS server running on port 53...")
+
+BLOCKPAGE_LOG_FILE = "/mnt/sda1/shared/WebHost/blockpage/block_logs.json"
+
+def log_blockpage_request(site, mode, user_ip):
+
+#   Logs blocked/warning requests to JSON.
+#   mode: 2 = blocked, 3 = warning
+
+    entry = {
+        "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "site": site,
+        "mode": mode,
+        "user_ip": user_ip
+    }
+
+    # Load existing logs
+    blockpage_logs = []
+    if os.path.exists(BLOCKPAGE_LOG_FILE):
+        try:
+            with open(BLOCKPAGE_LOG_FILE, "r") as f:
+                blockpage_logs = json.load(f)
+        except Exception:
+            blockpage_logs = []
+
+    # Append new log
+    blockpage_logs.append(entry)
+
+    # Save back
+    try:
+        with open(BLOCKPAGE_LOG_FILE, "w") as f:
+            json.dump(blockpage_logs, f, indent=2)
+    except Exception as e:
+        print("Failed to log blockpage request:", e)
+
+    return blockpage_logs  # Optional: return current logs
+"""
 
 config = {
     "config_visible": True,
@@ -73,6 +293,8 @@ if "users" not in config or not isinstance(config["users"], list):
 
 
 
+
+
 # ---------------- TEMPLATE ---------------- #
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -80,7 +302,8 @@ HTML_TEMPLATE = """
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<img src="WebHost/static/chronos.svg">
+<img src="WebHost/static/chronos.svg" alt="Chronos Logo" style="width: 100%; height: auto;">
+
 <link rel="icon" href="/static/logo.svg" type="image/svg+xml">
 
 <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -392,7 +615,8 @@ HTML_SIGNIN_PAGE = """
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<img src="WebHost/static/chronos.svg">
+<img src="WebHost/static/chronos.svg" alt="Chronos Logo" style="width: 100%; height: auto;">
+
 <link rel="icon" href="/static/logo.svg" type="image/svg+xml">
 
 <style>
@@ -694,55 +918,132 @@ HTML_MAIN_PAGE = """
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<img src="WebHost/static/chronos.svg">
 <link rel="icon" href="/static/logo.svg" type="image/svg+xml">
 
 <style>
+:root {
+    --bg: {{ background_color }};
+    --btn: {{ button_color }};
+    --btn-hover: {{ button_hover_color }};
+    --glass-bg: rgba(255,255,255,0.08);
+    --glass-border: rgba(255,255,255,0.2);
+}
+
+/* Auto light mode override */
+@media (prefers-color-scheme: light) {
+    :root {
+        --glass-bg: rgba(0,0,0,0.05);
+        --glass-border: rgba(0,0,0,0.15);
+    }
+}
+
 body {
+    margin: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: {{ background_color }};
+    background: var(--bg);
     color: white;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    height: 100vh;
+    min-height: 100vh;
 }
-h1 { font-size: 3rem; margin-bottom: 2rem; }
+
+/* Fade in */
+body {
+    animation: fadeIn 0.8s ease forwards;
+    opacity: 0;
+}
+
+@keyframes fadeIn {
+    to { opacity: 1; }
+}
+
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Buttons */
 .main-buttons {
     display: flex;
     gap: 20px;
     flex-wrap: wrap;
+    justify-content: center;
 }
+
 .main-buttons a {
     padding: 15px 25px;
-    border-radius: 12px;
-    background: {{ button_color }};
+    border-radius: 14px;
+    background: var(--btn);
     color: white;
     text-decoration: none;
     font-size: 1.2rem;
     transition: 0.3s;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
 }
+
 .main-buttons a:hover {
-    background: {{ button_hover_color }};
-    transform: translateY(-5%);
+    background: var(--btn-hover);
+    transform: translateY(-6%);
+    box-shadow: 0 12px 25px rgba(0,0,0,0.5);
+}
+
+/* Glass footer fixed */
+.footer {
+    position: fixed; /* always visible */
+    bottom: 0;
+    width: 100%;
+    padding: 15px;
+    text-align: center;
+    font-size: 0.9rem;
+    backdrop-filter: blur(12px);
+    background: var(--glass-bg);
+    border-top: 1px solid var(--glass-border);
+    animation: slideUp 0.6s ease forwards;
+}
+
+/* Footer animation */
+@keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+/* Prevent content hiding behind footer */
+.main-content {
+    padding-bottom: 80px;
 }
 </style>
 </head>
+
 <body>
-<button onclick="window.location='/logout'">🚪 Logout</button>
+
+<div class="main-content">
+
+    <img src="WebHost/static/chronos.svg"
+         alt="Chronos Logo"
+         style="width: 100%; max-width: 600px; height: auto; margin-bottom: 40px;">
+
+    <div class="main-buttons">
+        <a href="/files">📁 File Browser</a>
+        <a href="/upload">⬆️ Upload Files</a>
+        <a href="/logout">🚪 Logout</a>
+        <a href="/Bconnect">Backend Connect</a>
+    </div>
 
 </div>
 
-
-
-
-<div class="main-buttons">
-    <a href="/files">📁 File Browser</a>
-    <a href="/upload">⬆️ Upload Files</a>
-    <a href="/signin">🔑 Sign In</a>
-    <a href="/homeassistant">🏠 homeassistant</a>
-    <a href="/files">🎵 Audio Player</a>
+<div class="footer">
+    <a href="https://github.com/robotdjd/chronos/" style="color:inherit;">Chronos</a> © 2026 by
+    <a href="https://www.youtube.com/@robotdjd" style="color:inherit;">Robotdjd</a>
+    is licensed under
+    <a href="https://creativecommons.org/licenses/by-sa/4.0/" style="color:inherit;">CC BY-SA 4.0</a>
+    <img src="https://mirrors.creativecommons.org/presskit/icons/cc.svg" style="max-width:1em;">
+    <img src="https://mirrors.creativecommons.org/presskit/icons/by.svg" style="max-width:1em;">
+    <img src="https://mirrors.creativecommons.org/presskit/icons/sa.svg" style="max-width:1em;">
 </div>
 
 </body>
@@ -755,156 +1056,235 @@ upload_PAGE = """
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{{ main_title }}</title>
+
+<link rel="icon" href="/static/logo.svg" type="image/svg+xml">
+<img src="WebHost/static/chronos.svg" alt="Chronos Logo" style="width:100%;height:auto;">
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+
 <style>
 body {
+    margin: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: {{ background_color }};
+    background: {% if bg_exists %}url('{{ url_for('static', filename='bg.png') }}'){% else %}{{ background_color }}{% endif %};
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
     color: white;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
+    padding-bottom: 300px;
 }
-h1 { font-size: 3rem; margin-bottom: 2rem; }
-.main-buttons {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
+
+.header {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:10px 15px;
+    background:rgba(0,0,0,.6);
+    position:sticky;
+    top:0;
+    z-index:1000;
+    flex-wrap:wrap;
 }
-.main-buttons a {
-    padding: 15px 25px;
-    border-radius: 12px;
-    background: {{ button_color }};
-    color: white;
-    text-decoration: none;
-    font-size: 1.2rem;
-    transition: 0.3s;
+
+.header button {
+    font-size:1.1rem;
+    background:{{ button_color }};
+    color:white;
+    border:none;
+    padding:8px 12px;
+    border-radius:8px;
+    cursor:pointer;
 }
-.main-buttons a:hover {
-    background: {{ button_hover_color }};
-    transform: translateY(-5%);
+
+.header input {
+    flex:1;
+    min-width:180px;
+    padding:8px 12px;
+    border-radius:6px;
+    border:none;
 }
-.upload-container {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    align-items: center;
+
+/* Upload Drop Zone */
+#dropZone {
+    border:2px dashed #4caf50;
+    border-radius:15px;
+    padding:30px;
+    margin:15px;
+    text-align:center;
+    cursor:pointer;
+    transition:.3s;
 }
-input[type="file"] {
-    padding: 10px;
-    border-radius: 10px;
-    background-color: #292941;
-    color: white;
-    border: none;
-    cursor: pointer;
+#dropZone.dragover {
+    background:rgba(76,175,80,.1);
 }
-input[type="file"]:hover {
-    background-color: #4caf50;
+
+/* Items */
+#items {
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+    gap:12px;
+    padding:10px 15px;
 }
-select, option {
-    padding: 10px;
-    font-size: 1.2rem;
-    background-color: #292941;
-    color: white;
-    border-radius: 8px;
-    border: none;
+
+.folder,.file,.audio-link,.playlist-link {
+    background:rgba(0,0,0,.5);
+    border-radius:12px;
+    padding:15px 10px;
+    text-align:center;
+    text-decoration:none;
+    color:white;
+    transition:.2s;
+}
+
+.folder:hover,.file:hover,.audio-link:hover,.playlist-link:hover {
+    background:rgba(0,0,0,.75);
+    transform:translateY(-4px);
+}
+
+.folder::before{content:"📁";font-size:2rem}
+.file::before{content:"📄";font-size:2rem}
+.audio-link::before{content:"🎵";font-size:2rem}
+.playlist-link::before{content:"🎶";font-size:2rem}
+
+/* PLAYER */
+#audio-container {
+    position:fixed;
+    bottom:0;
+    width:100%;
+    background:rgba(0,0,0,.95);
+    padding:10px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    z-index:9999;
+}
+
+#audio-container audio {
+    width:100%;
+    max-width:700px;
+}
+
+#audio-container button {
+    font-size:1.2rem;
+    padding:6px 10px;
+    border:none;
+    border-radius:6px;
+    background:#292941;
+    color:white;
+    cursor:pointer;
+}
+
+#visualizer, #waveform {
+    max-width:700px;
+    width:100%;
+    height:90px;
+    display:none;
 }
 </style>
 </head>
+
 <body>
-<button onclick="window.location='/logout'">🚪 Logout</button>
 
-<h1>{{ main_title }}</h1>
+<div class="header">
+    <button onclick="window.location='/'">{{ home_icon or '🏠' }}</button>
+    <button onclick="window.history.back()">{{ back_icon or '⬅️' }}</button>
+    <h1>{{ main_title }}</h1>
+    <input id="search" placeholder="{{ search_placeholder or 'Search...' }}" onkeyup="filterItems()">
 
-<div class="upload-container">
-    <label for="uploadFiles">
-        <button>⬆️ Upload Files</button>
+    <!-- Upload input hidden -->
+    <label>
+        <button>⬆️ Upload</button>
         <input type="file" id="uploadFiles" multiple hidden>
     </label>
-    <p>Drag and drop or select files to upload</p>
-    
-    <!-- Folder selection dropdown -->
-    <label for="destinationFolder">Select Folder to Upload To:</label>
-    <select id="destinationFolder">
-        <option value="/path/to/destination1">Folder 1</option>
-        <option value="/path/to/destination2">Folder 2</option>
-        <!-- Add more options dynamically as needed -->
-    </select>
-
-    <button onclick="uploadFiles()">Upload Files</button>
 </div>
 
+<!-- Drop Zone -->
+<div id="dropZone">
+    Drag & Drop Files Here to Upload<br>
+    or Click the Upload Button
+</div>
+
+<!-- Folder/File list -->
+<div id="items">
+{% for item in items %}
+    {% if item.is_folder %}
+        <a class="folder" href="{{ item.url }}" data-path="{{ item.url }}">{{ item.icon }} {{ item.name }}</a>
+    {% elif item.is_audio %}
+        <a class="audio-link" href="{{ item.url }}" data-src="{{ item.data_src }}">{{ item.icon }} {{ item.name }}</a>
+    {% elif item.is_playlist %}
+        <a class="playlist-link" href="{{ item.url }}">{{ item.icon }} {{ item.name }}</a>
+    {% else %}
+        <a class="file" href="{{ item.url }}">{{ item.icon }} {{ item.name }}</a>
+    {% endif %}
+{% endfor %}
+</div>
+
+
+
 <script>
-// Handling file upload and selection of destination
-const uploadFilesInput = document.getElementById("uploadFiles");
-const destinationFolderSelect = document.getElementById("destinationFolder");
-
-function uploadFiles() {
-    const selectedFiles = uploadFilesInput.files;
-    const selectedFolder = destinationFolderSelect.value;
-
-    if (selectedFiles.length === 0) {
-        alert("Please select files to upload.");
-        return;
-    }
-
-    const formData = new FormData();
-    for (const file of selectedFiles) {
-        formData.append("files", file);
-    }
-    formData.append("path", selectedFolder);
-
-    fetch("/upload", {
-        method: "POST",
-        body: formData,
-        headers: {
-            "Accept": "application/json",
-            // You can try adding a CSRF token header here if you're using Flask-WTF
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert("Files uploaded successfully!");
-            location.reload();  // Reload to reflect the changes
-        } else {
-            alert("Error uploading files.");
-        }
-    })
-    .catch(error => {
-        console.error("Error:", error);
-        alert("Error uploading files.");
+// ------------------ SEARCH ------------------
+function filterItems(){
+    const q = search.value.toLowerCase();
+    document.querySelectorAll("#items a").forEach(a=>{
+        a.style.display = a.textContent.toLowerCase().includes(q) ? "flex" : "none";
     });
 }
 
+
+
+// ------------------ UPLOAD / DROPZONE ------------------
+const dropZone = document.getElementById("dropZone");
+const uploadFilesInput = document.getElementById("uploadFiles");
+let currentUploadPath = ""; 
+
+// Clicking a folder sets current upload path
+document.querySelectorAll(".folder").forEach(f=>{
+    f.addEventListener("click", e=>{
+        e.preventDefault();
+        currentUploadPath = f.dataset.path;
+        alert("Upload folder set to: " + currentUploadPath);
+        // Optional: navigate to folder
+        window.location = currentUploadPath;
+    });
+});
+
+// Drag & drop / file input
+dropZone.onclick = ()=> uploadFilesInput.click();
+dropZone.addEventListener("dragover", e=>{ e.preventDefault(); dropZone.classList.add("dragover"); });
+dropZone.addEventListener("dragleave", ()=>dropZone.classList.remove("dragover"));
+dropZone.addEventListener("drop", e=>{
+    e.preventDefault();
+    dropZone.classList.remove("dragover");
+    handleFiles(e.dataTransfer.files);
+});
+uploadFilesInput.onchange = ()=> handleFiles(uploadFilesInput.files);
+
+function handleFiles(files){
+    if(!files.length) return;
+    const form = new FormData();
+    for(const f of files) form.append("files", f);
+    form.append("path", currentUploadPath);
+
+    fetch("/upload", { method:"POST", body: form })
+        .then(r=>r.json())
+        .then(data=>{
+            alert("Uploaded "+data.uploaded.length+" files to "+currentUploadPath);
+            location.reload();
+        })
+        .catch(()=>alert("Upload failed"));
+}
+
+
 </script>
 
-</body>
-</html>
-
-"""
-
-
-homeassistant = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home Assistant</title>
-</head>
-<body>
-    <h1>Home Assistant</h1>
-    <iframe src="http://192.168.3.21:8123/lovelace/0" width="100%" height="800px" style="border:none;"></iframe>
 </body>
 </html>
 """
 
 HTML_ERROR_PAGE = """
 <!DOCTYPE html>
-<img src="WebHost/static/chronos.svg">
+<img src="WebHost/static/chronos.svg" alt="Chronos Logo">
+
 
 
 
@@ -2668,72 +3048,193 @@ function startCountdown(seconds) {
 </html>
 """
 
+Bconnect_PAGE = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<img src="WebHost/static/chronos.svg" alt="Chronos Logo" style="width: 100%; height: auto;">
 
+<link rel="icon" href="/static/logo.svg" type="image/svg+xml">
+
+<style>
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: {{ background_color }};
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+h1 { font-size: 3rem; margin-bottom: 2rem; }
+.main-buttons {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+.main-buttons a {
+    padding: 15px 25px;
+    border-radius: 12px;
+    background: {{ button_color }};
+    color: white;
+    text-decoration: none;
+    font-size: 1.2rem;
+    transition: 0.3s;
+}
+.main-buttons a:hover {
+    background: {{ button_hover_color }};
+    transform: translateY(-5%);
+}
+</style>
+</head>
+<body>
+
+<h1>select your OS for backend connect</h1>
+</div>
+
+
+
+
+<div class="main-buttons">
+    <a href="/Bconnect/Windows">Windows</a>
+    <a href="/Bconnect/MacOS">MacOS</a>
+    <a href="/Bconnect/linux">linux</a>
+    <a href="/Bconnect/source">source</a>
+    <a href="/">🏠 home</a>
+</div>
+
+</body>
+</html>
+"""
+
+blockpage_html = """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>{{ main_title }}</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background-color: {{ background_color }};
+    color: #fff;
+    text-align: center;
+    padding: 50px;
+}
+button {
+    background-color: {{ button_color }};
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+}
+button:hover {
+    background-color: {{ button_hover_color }};
+}
+.container {
+    max-width: 700px;
+    margin: auto;
+    padding: 20px;
+    border-radius: 8px;
+    background: #222;
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>{% if MOD==2 %}Blocked{% elif MOD==3 %}Warning{% else %}Notice{% endif %}</h1>
+    <p>URL: <b>{{ URL }}</b></p>
+    <p>User IP: {{ USER_IP }}</p>
+
+    {% if MOD==3 %}
+        <p>This site is flagged as a warning. Click continue if you acknowledge the risk.</p>
+        <form method="get" action="{{ RAW }}">
+            <button type="submit">Continue</button>
+        </form>
+    {% endif %}
+
+    {% if MOD==2 %}
+        <p>This site is blocked by Chronos Network Policy.</p>
+    {% endif %}
+</div>
+</body>
+</html>
+"""
 
 
 # ---------------- FILE LISTING ---------------- #
-AUDIO_EXTENSIONS = (".mp3", ".wav", ".ogg", ".m4a", ".flac", "m4p", ".wma")
+AUDIO_EXTENSIONS = (".mp3", ".wav", ".ogg", ".m4a", ".flac", ".m4p", ".wma")
 PLAYLIST_EXTENSIONS = (".xspf",)
 
 def list_items(abs_path, rel_path):
+    """
+    Lists folders and files for a given absolute path and relative path.
+    Returns a list of dicts with: name, icon, url, type flags.
+    """
     items = []
     try:
+        # Skip hidden folders/files if configured
         hidden_files = []
         if not config.get("webhost_folder_visible", True):
             hidden_files.append("webhost")
         if config.get("dashboard_files_hidden", True):
             hidden_files.extend([f.lower() for f in config.get("dashboard_file_names", [])])
 
-        for f in os.listdir(abs_path):
+        for f in sorted(os.listdir(abs_path)):
             full_path = os.path.join(abs_path, f)
-            fname_lower = f.lower()
-            if fname_lower in hidden_files: 
+            if f.lower() in hidden_files:
                 continue
 
-            encoded = urllib.parse.quote(os.path.join(rel_path, f).replace("\\", "/"))
+            # URL-safe path for links
+            encoded_path = urllib.parse.quote(os.path.join(rel_path, f).replace("\\", "/"))
 
             if os.path.isdir(full_path):
                 items.append({
                     "name": f,
                     "icon": "📁",
-                    "url": f"/files?path={encoded}",  # <-- stays in /files
+                    "url": f"/files?path={encoded_path}",
                     "is_folder": True,
                     "is_audio": False,
                     "is_playlist": False
                 })
+            elif f.lower().endswith(AUDIO_EXTENSIONS):
+                items.append({
+                    "name": f,
+                    "icon": "🎵",
+                    "url": f"/view?path={encoded_path}",
+                    "data_src": f"/view?path={encoded_path}",
+                    "is_folder": False,
+                    "is_audio": True,
+                    "is_playlist": False
+                })
+            elif f.lower().endswith(PLAYLIST_EXTENSIONS):
+                items.append({
+                    "name": f,
+                    "icon": "🎶",
+                    "url": f"/playlist?path={encoded_path}",
+                    "is_folder": False,
+                    "is_audio": False,
+                    "is_playlist": True
+                })
             else:
-                if fname_lower.endswith(AUDIO_EXTENSIONS):
-                    items.append({
-                        "name": f,
-                        "icon": "🎵",
-                        "url": f"/view?path={encoded}",  # href for clicking
-                        "data_src": f"/view?path={encoded}",  # explicitly for audio player
-                        "is_folder": False,
-                        "is_audio": True,
-                        "is_playlist": False
-                    })
-                elif fname_lower.endswith(PLAYLIST_EXTENSIONS):
-                    items.append({
-                        "name": f,
-                        "icon": "🎶",
-                        "url": f"/playlist?path={encoded}",
-                        "is_folder": False,
-                        "is_audio": False,
-                        "is_playlist": True
-                    })
-                else:
-                    items.append({
-                        "name": f,
-                        "icon": "📄",
-                        "url": f"/view?path={encoded}",
-                        "is_folder": False,
-                        "is_audio": False,
-                        "is_playlist": False
-                    })
+                items.append({
+                    "name": f,
+                    "icon": "📄",
+                    "url": f"/view?path={encoded_path}",
+                    "is_folder": False,
+                    "is_audio": False,
+                    "is_playlist": False
+                })
     except Exception as e:
         print("Error reading folder:", e)
     return items
-    
+
+
+
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -2811,12 +3312,58 @@ def trigger_error():
     raise Exception("💥shits going down💥")
 
 
+CUSTOM_HTML_PATH = "/mnt/sda1/shared/WebHost/custom"
+
+def get_custom_html_pages():
+    """
+    Returns a list of dicts for HTML files in /custom,
+    each dict has: name, icon, url
+    """
+    pages = []
+    try:
+        for f in sorted(os.listdir(CUSTOM_HTML_PATH)):
+            full_path = os.path.join(CUSTOM_HTML_PATH, f)
+            if f.lower().endswith(".html") and os.path.isfile(full_path):
+                # Remove .html extension for the URL
+                filename_without_ext = os.path.splitext(f)[0]
+                pages.append({
+                    "name": f,              # Full file name
+                    "icon": "🌐",           # Use globe icon for HTML
+                    "url": f"/{filename_without_ext}"  # URL matches file name
+                })
+    except Exception as e:
+        print("Error listing custom HTML pages:", e)
+    return pages
+
+
+
+
+
+@app.route("/<page_name>")
+def serve_html(page_name):
+    filename = f"{page_name}.html"
+    file_path = os.path.join(CUSTOM_HTML_PATH, filename)
+    if os.path.exists(file_path):
+        return send_from_directory(CUSTOM_HTML_PATH, filename)
+    return "Page not found", 404
+
 # ----------------- MAIN PAGE -----------------
 @app.route("/")
 @login_required
 def main_page():
     return render_template_string(
         HTML_MAIN_PAGE,
+        main_title=config.get("main_title", "Network Dashboard"),
+        background_color=config.get("background_color", "#1e1e2f"),
+        button_color=config.get("button_color", "#292941"),
+        button_hover_color=config.get("button_hover_color", "#4caf50")
+    )
+    
+@app.route("/Bconnect")
+@login_required
+def Bconnect_page():
+    return render_template_string(
+        Bconnect_PAGE,
         main_title=config.get("main_title", "Network Dashboard"),
         background_color=config.get("background_color", "#1e1e2f"),
         button_color=config.get("button_color", "#292941"),
@@ -2832,6 +3379,30 @@ def admin_page():
         background_color=config.get("background_color", "#1e1e2f"),
         button_color=config.get("button_color", "#292941"),
         button_hover_color=config.get("button_hover_color", "#4caf50")
+    )
+
+
+@app.route("/blockpage")
+@login_required
+def blockpage():
+    MOD = int(request.args.get("MOD", 2))  # 2 = blocked, 3 = warning
+    URL = request.args.get("URL", "example.com")
+    RAW = request.args.get("RAW", URL)
+    USER_IP = request.remote_addr
+
+    # Log this visit
+    blockpage_logs = log_blockpage_request(URL, MOD, USER_IP)
+
+    return render_template_string(
+        blockpage_html,
+        main_title="Chronos Block Page",
+        background_color="#1e1e2f",
+        button_color="#292941",
+        button_hover_color="#4caf50",
+        MOD=MOD,
+        URL=URL,
+        RAW=RAW,
+        USER_IP=USER_IP
     )
 
 
@@ -2878,6 +3449,26 @@ def timer():
         current_time=current_time
     )
 
+@app.route("/api/dashboard/<action>", methods=["POST"])
+def api_dashboard(action):
+    """
+    Run dashboard.sh actions remotely without SSH
+    e.g., POST /api/dashboard/reboot
+    """
+    allowed_actions = ["start", "stop", "reboot"]
+    if action not in allowed_actions:
+        return {"error": "Invalid action"}, 400
+
+    def run_action():
+        import subprocess
+        subprocess.Popen(
+            ["/mnt/sda1/shared/dashboard.sh", action],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+
+    threading.Thread(target=run_action, daemon=True).start()
+    return {"status": "scheduled", "action": action}, 200
 
 # Route for current time page
 @app.route("/current_time")
@@ -2939,46 +3530,90 @@ def current_time():
     """)
 
     
-@app.route("/homeassistant")
-@login_required
-def homeassistant():
-    return render_template_string(
-        homeassistant,
-        main_title=config.get("main_title", "Network Dashboard"),
-        background_color=config.get("background_color", "#1e1e2f"),
-        button_color=config.get("button_color", "#292941"),
-        button_hover_color=config.get("button_hover_color", "#4caf50")
-    )
+
+    
+
+
+@app.route("/info")
+def info():
+    return jsonify({
+        "version": version,
+        "url": local_hostname,
+        "url type": "http",
+        "domain type": ".local",
+        "server ip": lan_ip,
+        "server psw": "admin",
+        "server psw default": "true",
+        "name": "Chronos",
+        "Chronos": "Chronos © 2026 by Robotdjd is licensed under CC BY-SA 4.0. To view a copy of this license, visit https://creativecommons.org/licenses/by-sa/4.0/",
+        "creator": "Robotdjd, https://www.youtube.com/@robotdjd"
+    }), 500
+
+
 
     
 # Function to check if the file is allowed
-ALLOWED_EXTENSIONS = {'mp3', 'wav', 'ogg', 'm4a', 'flac', 'png', 'jpg', 'jpeg', 'gif'}
+ALLOWED_EXTENSIONS = {
+    "txt","pdf","png","jpg","jpeg","gif",
+    "mp3","wav","ogg","flac",
+    "zip","rar","7z","py","html","css","log","js"
+}
 
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Upload route
+@app.route("/upload", methods=["GET"])
+@login_required
+def upload_page():
+    return render_template_string(
+        upload_PAGE,
+        main_title="Upload Files",
+        background_color="#111",
+        button_color="#292941",
+        button_hover_color="#4caf50"
+    )
+
+# ---------------- UPLOAD ROUTE ----------------
 @app.route("/upload", methods=["POST"])
 @login_required
 def upload():
-    print(f"Request method: {request.method}")  # Log the method being used
+
     if "files" not in request.files:
-        return "No files part", 400
+        return jsonify(success=False, message="No files selected"), 400
+
     files = request.files.getlist("files")
-    destination_folder = request.form["path"]
+    sub_path = request.form.get("path", "")
 
-    # Ensure the folder exists
-    if not os.path.exists(destination_folder):
-        os.makedirs(destination_folder)
+    # Normalize + secure path
+    safe_path = os.path.normpath(os.path.join(BASE_DIR, sub_path.lstrip("/")))
 
-    # Save files
+    # Prevent path traversal attack
+    if not safe_path.startswith(BASE_DIR):
+        return jsonify(success=False, message="Invalid upload path"), 403
+
+    os.makedirs(safe_path, exist_ok=True)
+
+    uploaded = []
+    skipped = []
+
     for file in files:
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            file_path = os.path.join(destination_folder, filename)
-            file.save(file_path)
+            file_path = os.path.join(safe_path, filename)
 
-    return "Files uploaded successfully", 200
+            # 🔒 Overwrite Protection
+            if os.path.exists(file_path):
+                skipped.append(filename)
+                continue
+
+            file.save(file_path)
+            uploaded.append(filename)
+
+    return jsonify(
+        success=True,
+        uploaded=uploaded,
+        skipped=skipped
+    ), 200
 
 
 
@@ -2986,7 +3621,7 @@ def upload():
 @login_required
 def view_file():
     rel_path = request.args.get("path", "")
-    base_folder = "/mnt/sda1/shared"  # your files folder
+    base_folder = "/mnt/sda1/shared/files"  # your files folder
     abs_path = os.path.join(base_folder, rel_path)
 
     if not os.path.exists(abs_path):
@@ -3000,13 +3635,27 @@ def view_file():
 @app.route("/files")
 @login_required
 def files():
-    rel_path = request.args.get("path", "")  # get folder path
-    base_folder = "/mnt/sda1/shared"
+    base_folder = "/mnt/sda1/shared/files"
+    rel_path = request.args.get("path", "").lstrip("/")  # remove leading slash
     abs_path = os.path.join(base_folder, rel_path)
-    
-    items = list_items(abs_path, rel_path)
 
+    if not os.path.exists(abs_path):
+        return f"Folder not found: {rel_path}", 404
+
+    items = list_items(abs_path, rel_path)
     bg_exists = os.path.exists(os.path.join("static", "bg.png"))
+
+    # Breadcrumbs for navigation
+    breadcrumbs = []
+    path_accum = ""
+    if rel_path:
+        parts = rel_path.split("/")
+        for part in parts:
+            path_accum = os.path.join(path_accum, part)
+            breadcrumbs.append({
+                "name": part,
+                "url": f"/files?path={urllib.parse.quote(path_accum)}"
+            })
 
     return render_template_string(
         HTML_TEMPLATE,
@@ -3017,7 +3666,9 @@ def files():
         button_color=config.get("button_color", "#292941"),
         button_hover_color=config.get("button_hover_color", "#4caf50"),
         items=items,
-        bg_exists=bg_exists
+        bg_exists=bg_exists,
+        breadcrumbs=breadcrumbs,
+        current_path=rel_path
     )
 
 @app.route("/logout")
@@ -3072,6 +3723,45 @@ def dashboard_sh():
 
     return send_file(svg_path)
     
+@app.route("/logs")
+def dashboard_log():
+    svg_path = "/mnt/sda1/shared/dashboard.log"
+
+    if not os.path.exists(svg_path):
+        return "File not found", 404
+
+    return send_file(svg_path)
+    
+@app.route("/blockpage/config")
+def blockpage_config():
+    svg_path = "/mnt/sda1/shared/WebHost/blockpage/block_config.json"
+
+    if not os.path.exists(svg_path):
+        return "File not found", 404
+
+    return send_file(svg_path)
+    
+
+    
+@app.route("/Bconnect/Windows")
+def Bconnect_Windows():
+    svg_path = "/mnt/sda1/shared/WebHost/Bconnect/Chronos Bconnect.zip"
+
+    if not os.path.exists(svg_path):
+        return "File not found", 404
+
+    return send_file(svg_path, as_attachment=True, download_name="Chronos Bconnect.zip")
+    
+@app.route("/Bconnect/source")
+def Bconnect_source():
+    file_path = "/mnt/sda1/shared/WebHost/Bconnect/Chronos Bconnect.py"
+
+    if not os.path.exists(file_path):
+        return "File not found", 404
+
+    # This forces the browser to download the file instead of displaying it
+    return send_file(file_path, as_attachment=True, download_name="Chronos Bconnect.py")
+    
 @app.route("/testimage")
 def test_jpg():
     svg_path = "/mnt/sda1/shared/WebHost/test/image.jpg"
@@ -3099,3 +3789,6 @@ if __name__=="__main__":
     except PermissionError:
         print("Error: Port 80 requires root privileges. Run the script with sudo.")
         sys.exit(1)
+
+
+#Chronos  © 2026 by Robotdjd is licensed under CC BY-SA 4.0. To view a copy of this license, visit https://creativecommons.org/licenses/by-sa/4.0/

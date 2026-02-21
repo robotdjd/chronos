@@ -34,6 +34,30 @@ stop() {
     fi
 }
 
+update() {
+    # Stop dashboard if running
+    if [ -f "$PID_FILE" ]; then
+        PID=$(cat "$PID_FILE")
+        if kill -0 $PID 2>/dev/null; then
+            echo "Stopping Dashboard (PID $PID)..."
+            kill $PID
+            rm "$PID_FILE"
+            echo "Dashboard stopped."
+        else
+            rm "$PID_FILE"
+            echo "Dashboard not running, PID file removed."
+        fi
+    else
+        echo "No PID file found. Dashboard not running."
+    fi
+
+    # Start updater in foreground
+    echo "Starting updater..."
+    sudo python3 /mnt/sda1/shared/Chronos_updater.py
+    echo "Updater finished."
+}
+
+
 reboot() {
     stop
     start
@@ -43,5 +67,6 @@ case "$1" in
 start) start ;;
 stop) stop ;;
 reboot) reboot ;;
+update) update ;;
 *) echo "Usage: $0 {start|stop|reboot}" ;;
 esac

@@ -2,9 +2,9 @@ to start and stop the webpage... (http://chronos.local)
 
 remove "sudo" and "." sparingly 
 
-sudo ./mnt/sda1/shared/dashboard.sh start
-sudo ./mnt/sda1/shared/dashboard.sh reboot
-sudo ./mnt/sda1/shared/dashboard.sh stop
+sudo /mnt/sda1/shared/dashboard.sh start
+sudo /mnt/sda1/shared/dashboard.sh reboot
+sudo /mnt/sda1/shared/dashboard.sh stop
 
 
 if you reboot the server...

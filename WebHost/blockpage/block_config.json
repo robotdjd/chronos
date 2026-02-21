@@ -1,0 +1,16 @@
+{
+  "main_title": "Network Dashboard",
+  "background_color": "#1e1e2f",
+  "button_color": "#292941",
+  "button_hover_color": "#4caf50",
+
+  "blocked_sites": [
+    "facebook.com",
+    "youtube.com",
+    "twitter.com"
+  ],
+  "warning_sites": [
+    "reddit.com",
+    "instagram.com"
+  ]
+}
