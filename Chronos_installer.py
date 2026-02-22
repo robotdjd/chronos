@@ -5,6 +5,7 @@ import subprocess
 import platform
 import time
 import argparse
+import pexpect
 
 # --------------------- Banner ---------------------
 
@@ -31,6 +32,21 @@ def loading_bar(duration=3, bar_length=40):
         sys.stdout.flush()
         time.sleep(duration / bar_length)
     print("\n\n            ✔ Environment Ready.\n")
+
+def set_smb_password():
+    command = "sudo smbpasswd -a chronos"
+    child = pexpect.spawn(command)
+    
+    child.expect("New SMB password:")
+    child.sendline("admin")  # Send the password
+    child.expect("Retype new SMB password:")
+    child.sendline("admin")  # Retype the password
+    
+    child.expect(pexpect.EOF)  # Wait for the process to finish
+    print("Password set successfully.")
+
+# Call the function to set the password
+set_smb_password()
 
 # ------------------ Argument Parsing ------------------
 
@@ -315,3 +331,4 @@ public=no
 
 if __name__ == "__main__":
     main()
+
