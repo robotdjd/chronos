@@ -85,11 +85,11 @@ def run(cmd):
     print(f"\n>>> {cmd}")
     subprocess.run(cmd, shell=True, check=True)
 
-# Adding the user and setting the SMB password
-run("sudo useradd -m chronos")  # Create the user if it doesn't exist
+# Unmount the partition first
+run(f"umount {partition}")
 
-# Now set the password correctly
-run("sudo smbpasswd -a chronos <<EOF\nadmin\nadmin\nEOF")
+# Now format the partition
+run(f"mkfs.ext4 {partition}")
 
 def get_root_drive():
     root = subprocess.check_output("findmnt -n -o SOURCE /", shell=True).decode().strip()
@@ -289,6 +289,7 @@ public=no
 
 if __name__ == "__main__":
     main()
+
 
 
 
