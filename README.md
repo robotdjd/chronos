@@ -2,6 +2,9 @@ to install:
 
 For Debian/Ubuntu:
 
+	sudo rm /var/lib/dpkg/lock-frontend
+	sudo rm /var/cache/apt/archives/lock
+	sudo dpkg --configure -a
 	sudo apt update
 	sudo apt install python3 python3-pip -y
 	sudo apt update
