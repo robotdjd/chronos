@@ -41,7 +41,6 @@ REQUIRED_PACKAGES = [
     "requests"
 ]
 
-
 def ensure_pip():
     try:
         import pip
@@ -53,10 +52,15 @@ def ensure_pip():
 
 def install_packages():
     print("\nInstalling required packages...\n")
-    for package in REQUIRED_PACKAGES:
+    packages = [
+        "python3-flask",
+        "python3-werkzeug",
+        "python3-authlib",
+        "python3-requests"
+    ]
+    for package in packages:
         print(f"Installing {package}...")
-        # Use sudo to install system-wide and bypass system restrictions
-        subprocess.check_call(['sudo', sys.executable, '-m', 'pip', 'install', '--upgrade', package, '--break-system-packages'])
+        subprocess.check_call(['sudo', 'apt', 'install', '-y', package])
     print("\n✔ All packages installed successfully!")
 
 # ---------------- RUN IMMEDIATELY ---------------- #
@@ -279,5 +283,6 @@ public=no
 
 if __name__ == "__main__":
     main()
+
 
 
