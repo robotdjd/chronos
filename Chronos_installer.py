@@ -56,7 +56,8 @@ def install_packages():
         "python3-flask",
         "python3-werkzeug",
         "python3-authlib",
-        "python3-requests"
+        "python3-requests",
+        "python3-pexpect"
     ]
     for package in packages:
         print(f"Installing {package}...")
@@ -78,18 +79,20 @@ install_packages()
 
 print("\nEnvironment setup complete!")
 print("You can now run your Flask app.")
-
+import pexpect
 # ------------------ Helper ------------------
 
 def run(cmd):
     print(f"\n>>> {cmd}")
     subprocess.run(cmd, shell=True, check=True)
 
-# Unmount the partition first
-run(f"umount {partition}")
-
-# Now format the partition
-run(f"mkfs.ext4 {partition}")
+# Set the Samba password using pexpect for interactivity
+child = pexpect.spawn('sudo smbpasswd -a chronos')
+child.expect("New SMB password:")
+child.sendline('admin')
+child.expect("Retype new SMB password:")
+child.sendline('admin')
+child.expect(pexpect.EOF)
 
 def get_root_drive():
     root = subprocess.check_output("findmnt -n -o SOURCE /", shell=True).decode().strip()
@@ -289,6 +292,7 @@ public=no
 
 if __name__ == "__main__":
     main()
+
 
 
 
