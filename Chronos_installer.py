@@ -4,7 +4,9 @@ import sys
 import subprocess
 import platform
 import time
+import argparse
 
+# --------------------- Banner ---------------------
 
 def print_banner():
     print("=" * 60)
@@ -29,10 +31,17 @@ def loading_bar(duration=3, bar_length=40):
         sys.stdout.flush()
         time.sleep(duration / bar_length)
     print("\n\n            ✔ Environment Ready.\n")
-    
-print_banner()
-loading_bar(duration=4)
 
+# ------------------ Argument Parsing ------------------
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Chronos Dashboard Installer")
+    parser.add_argument("--auto", action="store_true", help="Run the installer automatically without user interaction.")
+    return parser.parse_args()
+
+args = parse_args()
+
+# ------------------ Installation Setup ------------------
 
 REQUIRED_PACKAGES = [
     "flask",
@@ -64,28 +73,32 @@ def install_packages():
         subprocess.check_call(['sudo', 'apt', 'install', '-y', package])
     print("\n✔ All packages installed successfully!")
 
-# ---------------- RUN IMMEDIATELY ---------------- #
-
-print("=" * 50)
-print("        Web App Environment Installer")
-print("=" * 50)
-print(f"OS Detected: {platform.system()}")
-print(f"Python Version: {platform.python_version()}\n")
-
-loading_bar()
-
-ensure_pip()
-install_packages()
-
-print("\nEnvironment setup complete!")
-print("You can now run your Flask app.")
-import pexpect
-# ------------------ Helper ------------------
+# ------------------ Helper Functions ------------------
 
 def run(cmd):
     print(f"\n>>> {cmd}")
     subprocess.run(cmd, shell=True, check=True)
 
+def is_smb_user_exists(username):
+    try:
+        # Check if the user exists in the samba database
+        subprocess.check_output(["sudo", "smbpasswd", "-e", username])
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+def check_drive_format(partition):
+    try:
+        subprocess.check_output(f"lsblk {partition}", shell=True)
+        print(f"Drive {partition} is already formatted.")
+    except subprocess.CalledProcessError:
+        print(f"Drive {partition} is not formatted.")
+
+def confirm_format(drive):
+    response = input(f"Are you sure you want to format {drive}? This action is irreversible (y/N): ")
+    if response.lower() != "y":
+        print("Operation aborted.")
+        sys.exit(1)
 
 def get_root_drive():
     root = subprocess.check_output("findmnt -n -o SOURCE /", shell=True).decode().strip()
@@ -153,11 +166,25 @@ def confirm_danger(drive, drive_display):
 # ------------------ Main ------------------
 
 def main():
-
     if os.geteuid() != 0:
         print("❌ Run as root (sudo).")
         sys.exit(1)
 
+    print("=" * 50)
+    print("        Web App Environment Installer")
+    print("=" * 50)
+    print(f"OS Detected: {platform.system()}")
+    print(f"Python Version: {platform.python_version()}\n")
+
+    loading_bar(duration=4)
+
+    ensure_pip()
+    install_packages()
+
+    print("\nEnvironment setup complete!")
+    print("You can now run your Flask app.")
+
+    # ------------------ Disk Setup ------------------
     drives = list_drives()
     drive, drive_display = select_drive(drives)
     partition = drive + "1"
@@ -166,7 +193,10 @@ def main():
 
     print("\n🚀 Formatting drive...\n")
 
+    confirm_format(drive)
+
     run(f"echo -e 'o\nn\np\n1\n\n\nw' | fdisk {drive}")
+    check_drive_format(partition)
     run(f"mkfs.ext4 {partition}")
 
     mount_point = f"/mnt/{os.path.basename(drive)}1"
@@ -198,9 +228,11 @@ public=no
 
     run("systemctl restart smbd")
 
-    run("id -u chronos || useradd -m chronos")
-    run("echo 'chronos:admin' | chpasswd")
-    run("echo -e 'admin\nadmin' | smbpasswd -a chronos")
+    if not is_smb_user_exists('chronos'):
+        print("Setting password for Samba user 'chronos'...")
+        run("echo -e 'admin\nadmin' | sudo smbpasswd -a chronos")
+    else:
+        print("Samba user 'chronos' already exists, skipping password setup.")
 
     # -------- Download Chronos --------
 
@@ -281,15 +313,5 @@ public=no
     print("    ██████████  ██                          ██    ")
     print("                  ██████████████████████████      ")
 
-
-
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
