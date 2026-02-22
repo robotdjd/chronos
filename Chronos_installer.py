@@ -96,14 +96,6 @@ def run(cmd):
     print(f"\n>>> {cmd}")
     subprocess.run(cmd, shell=True, check=True)
 
-def is_smb_user_exists(username):
-    try:
-        # Check if the user exists in the samba database
-        subprocess.check_output(["sudo", "smbpasswd", "-e", username])
-        return True
-    except subprocess.CalledProcessError:
-        return False
-
 def check_drive_format(partition):
     try:
         subprocess.check_output(f"lsblk {partition}", shell=True)
@@ -332,5 +324,6 @@ public=no
 
 if __name__ == "__main__":
     main()
+
 
 
