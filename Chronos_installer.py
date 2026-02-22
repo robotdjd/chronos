@@ -6,7 +6,6 @@ import platform
 import time
 
 
-
 def print_banner():
     print("=" * 60)
     print("                    MY  CHRONOS  DASHBOARD")
@@ -56,7 +55,8 @@ def install_packages():
     print("\nInstalling required packages...\n")
     for package in REQUIRED_PACKAGES:
         print(f"Installing {package}...")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", package, "--break-system-packages"])
+        # Use sudo to install system-wide and bypass system restrictions
+        subprocess.check_call(['sudo', sys.executable, '-m', 'pip', 'install', '--upgrade', package, '--break-system-packages'])
     print("\n✔ All packages installed successfully!")
 
 # ---------------- RUN IMMEDIATELY ---------------- #
@@ -279,4 +279,5 @@ public=no
 
 if __name__ == "__main__":
     main()
+
 
