@@ -237,11 +237,7 @@ public=no
 
     run("systemctl restart smbd")
 
-    if not is_smb_user_exists('chronos'):
-        print("Setting password for Samba user 'chronos'...")
-        run("echo -e 'admin\nadmin' | sudo smbpasswd -a chronos")
-    else:
-        print("Samba user 'chronos' already exists, skipping password setup.")
+
 
     # -------- Download Chronos --------
 
@@ -324,6 +320,7 @@ public=no
 
 if __name__ == "__main__":
     main()
+
 
 
 
