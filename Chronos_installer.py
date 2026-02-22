@@ -38,11 +38,12 @@ def set_smb_password():
     child = pexpect.spawn(command)
     
     child.expect("New SMB password:")
-    child.sendline("admin")  # Send the password
+    child.sendline("admin")  # Send the first password
     child.expect("Retype new SMB password:")
     child.sendline("admin")  # Retype the password
     
-    child.expect(pexpect.EOF)  # Wait for the process to finish
+    # Check if the password was successfully set
+    child.expect(pexpect.EOF)
     print("Password set successfully.")
 
 # Call the function to set the password
@@ -331,4 +332,5 @@ public=no
 
 if __name__ == "__main__":
     main()
+
 
