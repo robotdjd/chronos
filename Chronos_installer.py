@@ -85,6 +85,12 @@ def run(cmd):
     print(f"\n>>> {cmd}")
     subprocess.run(cmd, shell=True, check=True)
 
+# Adding the user and setting the SMB password
+run("sudo useradd -m chronos")  # Create the user if it doesn't exist
+
+# Now set the password correctly
+run("sudo smbpasswd -a chronos <<EOF\nadmin\nadmin\nEOF")
+
 def get_root_drive():
     root = subprocess.check_output("findmnt -n -o SOURCE /", shell=True).decode().strip()
     return root.rstrip("0123456789")
@@ -283,6 +289,7 @@ public=no
 
 if __name__ == "__main__":
     main()
+
 
 
 
