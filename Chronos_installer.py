@@ -86,29 +86,6 @@ def run(cmd):
     print(f"\n>>> {cmd}")
     subprocess.run(cmd, shell=True, check=True)
 
-def check_samba_password():
-    try:
-        # Check if the password for 'chronos' is 'admin'
-        result = subprocess.check_output("sudo smbpasswd -c /etc/samba/smb.conf -a chronos", shell=True, stderr=subprocess.STDOUT)
-        if 'admin' in result.decode():
-            print("Password is already set to 'admin'. Skipping password setup.")
-            return True
-    except subprocess.CalledProcessError:
-        pass
-    return False
-
-# Check the password and only set it if necessary
-if not check_samba_password():
-    print("Setting Samba password for 'chronos'...")
-    run("echo -e 'admin\nadmin' | sudo smbpasswd -a chronos")
-
-# Set the Samba password using pexpect for interactivity
-child = pexpect.spawn('sudo smbpasswd -a chronos')
-child.expect("New SMB password:")
-child.sendline('admin')
-child.expect("Retype new SMB password:")
-child.sendline('admin')
-child.expect(pexpect.EOF)
 
 def get_root_drive():
     root = subprocess.check_output("findmnt -n -o SOURCE /", shell=True).decode().strip()
@@ -308,6 +285,7 @@ public=no
 
 if __name__ == "__main__":
     main()
+
 
 
 
