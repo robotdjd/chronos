@@ -19,6 +19,14 @@ if you are having problems installing or need to update run the updater:
 	wget https://raw.githubusercontent.com/robotdjd/chronos/main/Chronos_updater.py
 	sudo python3 Chronos_updater.py
 
+backend connect:
+
+backend connect will only work with Windows, MacOs, or non-headless versons of linux. (needs a gui)
+use backend connect by opening it using a command line
+backend connect allows you to add and remove files from your Chronos webpage and reboot it (smb and ssh)
+note that it also allows you to access the core part of the server so be careful!!!
+if you want to add files that are visable from the page make sure the files you add go into the folder "files"
+
 commands
 
 start:
