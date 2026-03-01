@@ -1,4 +1,4 @@
-version = "beta 1.2"
+version = "beta 1.3"
 
 #!/usr/bin/env python3
 import os
@@ -25,6 +25,8 @@ from flask import jsonify
 from flask import Flask, send_from_directory
 import platform
 import threading
+import re
+from urllib.parse import quote_plus
 #from mitmproxy import http
 #from dnslib.server import DNSServer, BaseResolver, DNSHandler
 #from dnslib import RR, QTYPE, A
@@ -186,7 +188,7 @@ def install_dept():
 
 # ---------------- START ---------------- #
 
-#install_dept() //does not work for rpi
+#install_dept() //does not work
 
 """
 BLOCK_CONFIG_PATH = "/mnt/sda1/shared/WebHost/blockpage/block_config.json"
@@ -304,11 +306,19 @@ HTML_TEMPLATE = """
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <img src="WebHost/static/chronos.svg" alt="Chronos Logo" style="width: 100%; height: auto;">
 
-<link rel="icon" href="/static/logo.svg" type="image/svg+xml">
+<link rel="icon" type="image/x-icon" href="/WebHost/static/logo.ico">
 
 <script src="https://d3js.org/d3.v7.min.js"></script>
 
 <style>
+
+:root{
+    --theme-main: {{ button_color }};
+    --theme-glow: rgba(255,255,255,.15);
+}
+
+
+
 body {
     margin: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -350,6 +360,8 @@ body {
     border:none;
 }
 
+
+
 #items {
     display:grid;
     grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
@@ -372,6 +384,10 @@ body {
     transform:translateY(-4px);
 }
 
+.video-link::before {
+    content: "🎬"; /* or "📹" if you prefer */
+    font-size: 2rem;
+}
 .folder::before{content:"📁";font-size:2rem}
 .file::before{content:"📄";font-size:2rem}
 .audio-link::before{content:"🎵";font-size:2rem}
@@ -400,7 +416,7 @@ body {
     padding:6px 10px;
     border:none;
     border-radius:6px;
-    background:#292941;
+    background:var(--theme-main);
     color:white;
     cursor:pointer;
 }
@@ -411,10 +427,309 @@ body {
     height:90px;
     display:none;
 }
+
+/* MINI PLAYER */
+#mini-player{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:15px;
+}
+
+/* LEFT */
+.mp-left{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    width:30%;
+}
+
+#mp-art{
+    width:65px;
+    height:65px;
+    object-fit:cover;
+    border-radius:10px;
+    background:#111;
+    transition:.4s;
+}
+
+.mp-meta{
+    display:flex;
+    flex-direction:column;
+}
+
+#mp-title{font-weight:bold;}
+#mp-artist{font-size:0.8rem;color:var(--theme-main);}
+
+/* CENTER */
+.mp-center{
+    width:40%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+}
+
+.mp-controls button{
+    background:#292941;
+    border:none;
+    color:white;
+    padding:6px 10px;
+    border-radius:6px;
+    cursor:pointer;
+    transition:.2s;
+}
+
+.mp-controls button:hover{
+    background:var(--theme-main);
+}
+
+.play-btn{
+    background:var(--theme-main);
+    font-size:1.2rem;
+}
+
+
+
+.active{
+    background:var(--theme-main);
+}
+
+/* PROGRESS */
+.mp-progress{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    width:100%;
+}
+
+#progressBar{
+    flex:1;
+}
+
+/* RIGHT */
+.mp-right{
+    width:20%;
+    display:flex;
+    justify-content:flex-end;
+}
+
+/* OVERLAY */
+#drawerOverlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.6);
+    backdrop-filter:blur(4px);
+    opacity:0;
+    pointer-events:none;
+    transition:.3s;
+    z-index:9998;
+}
+
+#drawerOverlay.active{
+    opacity:1;
+    pointer-events:all;
+}
+
+/* DRAWER */
+#queueDrawer{
+    position:fixed;
+    right:-380px;
+    top:0;
+    width:350px;
+    height:100%;
+    background:rgba(15,15,25,.98);
+    padding:20px;
+    transition:.35s cubic-bezier(.25,.8,.25,1);
+    overflow-y:auto;
+    z-index:9999;
+    box-shadow:-10px 0 30px rgba(0,0,0,.6);
+    display:flex;
+    flex-direction:column;
+}
+
+#queueDrawer.open{
+    right:0;
+}
+
+.drawer-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:15px;
+}
+
+.drawer-header h3{
+    margin:0;
+}
+
+.drawer-header button{
+    background:none;
+    border:none;
+    color:white;
+    font-size:1.2rem;
+    cursor:pointer;
+}
+
+.queue-item{
+    padding:10px;
+    border-radius:8px;
+    cursor:pointer;
+    transition:.2s;
+}
+
+.queue-item:hover{
+    background:rgba(255,255,255,.1);
+}
+
+#queueDrawer.open{ right:0; }
+
+.queue-item{
+    padding:8px;
+    border-radius:8px;
+    cursor:pointer;
+}
+
+.queue-item:hover{
+    background:rgba(255,255,255,.1);
+}
+
+/* MOBILE */
+@media(max-width:768px){
+    #mini-player{
+        flex-direction:column;
+        gap:8px;
+    }
+    .mp-left,.mp-center,.mp-right{
+        width:100%;
+        justify-content:center;
+    }
+}
+
+/* BACKGROUND PLAYER DISPLAY */
+#bg-player {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+    color: rgba(255,255,255,0.7);
+    z-index: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+#bg-player #bg-art {
+    width: 200px;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 20px;
+    filter: brightness(0.6) blur(2px);
+    transition: all 0.4s ease;
+}
+
+#bg-player #bg-info {
+    backdrop-filter: blur(6px);
+    padding: 10px 20px;
+    border-radius: 12px;
+    background: rgba(0,0,0,0.4);
+}
+
+#bg-player #bg-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+#bg-player #bg-artist {
+    font-size: 1rem;
+    color: rgba(255,255,255,0.6);
+}
+
+#volume {
+    -webkit-appearance: none;  /* remove default look */
+    -moz-appearance: none;
+    appearance: none;
+    width: 100px;             /* adjust to fit your layout */
+    height: 6px;
+    background: rgba(255, 255, 255, 0.3); /* track background */
+    accent-color: #4caf50; /* track color on modern browsers */
+    margin: 0 10px;      /* spacing between buttons and slider */
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+}
+
+/* Track for WebKit (Chrome, Safari) */
+#volume::-webkit-slider-runnable-track {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+#volume::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    background: var(--theme-main);  /* your button color */
+    border-radius: 50%;
+    cursor: pointer;
+    margin-top: -5px;  /* center the thumb on the track */
+    transition: background 0.2s;
+}
+
+#volume::-webkit-slider-thumb:hover {
+    background: rgba(255,255,255,0.8);
+}
+
+/* Track for Firefox */
+#volume::-moz-range-track {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+#volume::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: var(--theme-main);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+#volume::-moz-range-thumb:hover {
+    background: rgba(255,255,255,0.8);
+}
+
+#bg-player {
+    display: none;
+}
+
+/* Active button highlight */
+button.active, .toggle-btn.active {
+    background-color: #4caf50; /* or whatever highlight color you want */
+    color: white;
+    box-shadow: 0 0 10px #4caf50;
+}
+
 </style>
 </head>
 
+<!-- Background Player Display -->
+<div id="bg-player">
+    <img id="bgArt" src="/WebHost/static/error.png" alt="Cover Art">
+    <div id="bg-info">
+        <div id="bgTitle"></div>
+        <div id="bgArtist"></div>
+    </div>
+</div>
+
 <body>
+
+
 
 <div class="header">
     <button onclick="window.location='/'">{{ home_icon }}</button>
@@ -431,179 +746,340 @@ body {
 
 <div id="items">
 {% for item in items %}
-{% if item.is_playlist %}
-<a class="playlist-link" href="{{ item.url }}">{{ item.name }}</a>
-{% elif item.is_audio %}
-<a class="audio-link" href="{{ item.url }}" data-src="{{ item.url }}">{{ item.name }}</a>
-{% elif item.is_folder %}
-<a class="folder" href="{{ item.url }}">{{ item.name }}</a>
-{% else %}
-<a class="file" href="{{ item.url }}">{{ item.name }}</a>
-{% endif %}
+    {% if item.is_playlist %}
+        <a class="playlist-link" href="{{ item.url }}">
+            {{ item.name }}
+        </a>
+
+    {% elif item.is_audio %}
+        <a class="audio-link"
+           href="{{ item.url }}"
+           data-src="{{ item.data_src or item.url }}"
+           data-art="{{ item.data_art or '/WebHost/static/music.png' }}">
+           {{ item.name }}
+        </a>
+
+    {% elif item.url.endswith(('.mp4', '.webm', '.mkv', '.mov', '.avi')) %}
+        <a class="video-link"
+           href="{{ item.url }}"
+           data-src="{{ item.url }}"
+           data-art="{{ item.data_art or '/WebHost/static/music.png' }}">
+           {{ item.name }}
+        </a>
+
+    {% elif item.is_folder %}
+        <a class="folder" href="{{ item.url }}">
+            {{ item.name }}
+        </a>
+
+    {% else %}
+        <a class="file" href="{{ item.url }}">
+            {{ item.name }}
+        </a>
+    {% endif %}
 {% endfor %}
 </div>
 
 <div id="audio-container">
-    <div id="now-playing"></div>
 
-    <div style="display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
-        <button id="prevBtn">⏮️</button>
-        <button id="playPauseBtn">▶️</button>
-        <button id="nextBtn">⏭️</button>
-        <button id="shuffleBtn">🔀</button>
-        <button id="repeatBtn">🔁</button>
-        <button id="sortBtn">🔃</button>
-        <button id="vizBtn">📊</button>
-        <button id="waveBtn">🌊</button>
+    <div id="mini-player">
+
+        <!-- LEFT -->
+        <div class="mp-left">
+            <img id="mp-art" src="/WebHost/static/music.png">
+            <div class="mp-meta">
+                <div id="mp-title">Nothing Playing</div>
+                <div id="mp-artist">---</div>
+            </div>
+        </div>
+
+        <!-- CENTER -->
+        <div class="mp-center">
+            <div class="mp-controls">
+                <button id="shuffleBtn">🔀</button>
+                <button id="prevBtn">⏮</button>
+                <button id="playPauseBtn" class="play-btn">▶</button>
+                <button id="nextBtn">⏭</button>
+                <button id="repeatBtn">🔁</button>
+            </div>
+
+            <div class="mp-progress">
+                <span id="currentTime">0:00</span>
+                <input type="range" id="progressBar" value="0" min="0" max="100">
+                <span id="duration">0:00</span>
+            </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div class="mp-right">
+            🔊 <input type="range" id="volume" min="0" max="1" step="0.01" value="1">
+        </div>
+
+        <audio id="player"></audio>
+
     </div>
 
-    <audio id="player" controls></audio>
     <svg id="visualizer"></svg>
     <canvas id="waveform"></canvas>
+
+</div>
+
+<canvas id="visualizer"></canvas>
+
+<!-- VIDEO OVERLAY -->
+<div id="videoOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:10000;align-items:center;justify-content:center;flex-direction:column;">
+    <video id="videoPlayer" controls style="max-width:90%;max-height:90%;border-radius:12px;">
+        Your browser does not support HTML5 video.
+    </video>
+    <div style="margin-top:15px;">
+        <button id="closeVideo" style="font-size:1.5rem;color:white;background:none;border:none;cursor:pointer;">✖ Close</button>
+        <button id="fullscreenVideo" style="font-size:1.5rem;color:white;background:none;border:none;cursor:pointer;">⛶ Fullscreen</button>
+    </div>
+</div>
+
+<!-- Overlay -->
+<div id="drawerOverlay"></div>
+
+<!-- Queue Drawer -->
+<div id="queueDrawer">
+    <div class="drawer-header">
+        <h3>Up Next</h3>
+    </div>
+    <div id="queueList"></div>
 </div>
 
 <script>
-// ---------- SEARCH ----------
-function filterItems(){
-    const q = search.value.toLowerCase();
-    document.querySelectorAll("#items a").forEach(a=>{
-        a.style.display = a.textContent.toLowerCase().includes(q) ? "flex" : "none";
-    });
-}
-
-// ---------- PLAYER ----------
+// ---------- ELEMENTS ----------
 const player = document.getElementById("player");
-const nowPlaying = document.getElementById("now-playing");
+const art = document.getElementById("mp-art");
+const bgArt = document.getElementById("bgArt");
+const titleEl = document.getElementById("mp-title");
+const artistEl = document.getElementById("mp-artist");
+const bgTitle = document.getElementById("bgTitle");
+const bgArtist = document.getElementById("bgArtist");
+const progressBar = document.getElementById("progressBar");
+const currentTimeEl = document.getElementById("currentTime");
+const durationEl = document.getElementById("duration");
+const volume = document.getElementById("volume");
+const queueDrawer = document.getElementById("queueDrawer");
+const queueList = document.getElementById("queueList");
+
+const videoOverlay = document.getElementById("videoOverlay");
+const videoPlayer = document.getElementById("videoPlayer");
+const closeVideo = document.getElementById("closeVideo");
+const fullscreenVideo = document.getElementById("fullscreenVideo");
+
+const playPauseBtn = document.getElementById("playPauseBtn");
+const nextBtn = document.getElementById("nextBtn");
+const prevBtn = document.getElementById("prevBtn");
+const shuffleBtn = document.getElementById("shuffleBtn");
+const repeatBtn = document.getElementById("repeatBtn");
+const queueBtn = document.getElementById("queueBtn");
+
+// ---------- STATE ----------
 let currentFolderFiles = [];
 let playlistQueue = [];
 let index = 0;
 let shuffleMode = false;
 let repeatMode = false;
-let sortAsc = true;
+let fadeInterval = null;
 
-// Load all audio in current folder
-function loadFolder(){
-    currentFolderFiles = [...document.querySelectorAll(".audio-link")]
-        .map(a=>({title:a.textContent,url:a.dataset.src})); // make sure dataset.src exists
+// ---------- LOAD AUDIO & VIDEO LINKS ----------
+function loadFolder() {
+    currentFolderFiles = [...document.querySelectorAll(".audio-link, .video-link")].map(a => {
+        let name = a.textContent.trim();
+        let artist = "Unknown Artist", title = name;
+        const parts = name.split(" - ");
+        if (parts.length >= 2) { artist = parts[0].trim(); title = parts[1].trim(); }
+        return {
+            title: title,
+            artist: artist,
+            url: a.dataset.src,
+            art: a.dataset.art || "/WebHost/static/music.png",
+            isVideo: a.classList.contains("video-link")
+        };
+    });
+
+    // Populate playlistQueue with the folder
+    playlistQueue = [...currentFolderFiles];
+    renderQueue();
 }
 
-
-// Play track by index
-function playTrack(i){
-    if(!playlistQueue.length) return;
-    index = (i + playlistQueue.length) % playlistQueue.length;
-    if(!playlistQueue[index]) return;
-    player.src = playlistQueue[index].url;
-    player.play();
-    nowPlaying.textContent = "Now Playing: " + playlistQueue[index].title;
-    playPauseBtn.textContent="⏸️";
-}
-
-// Controls
-playPauseBtn.onclick = ()=>{if(player.paused){player.play();playPauseBtn.textContent="⏸️";}else{player.pause();playPauseBtn.textContent="▶️";}};
-nextBtn.onclick = ()=>{if(shuffleMode) playTrack(Math.floor(Math.random()*playlistQueue.length));else playTrack(index+1);};
-prevBtn.onclick = ()=>{if(shuffleMode) playTrack(Math.floor(Math.random()*playlistQueue.length));else playTrack(index-1);};
-shuffleBtn.onclick = ()=>{shuffleMode=!shuffleMode;shuffleBtn.style.background = shuffleMode ? "#4caf50" : "#292941";};
-repeatBtn.onclick = ()=>{repeatMode=!repeatMode;repeatBtn.style.background = repeatMode ? "#4caf50" : "#292941";};
-sortBtn.onclick = ()=>{currentFolderFiles.sort((a,b)=>sortAsc ? a.title.localeCompare(b.title) : b.title.localeCompare(a.title)); sortAsc=!sortAsc; playlistQueue=[...currentFolderFiles]; playTrack(0);};
-player.onended = ()=>{if(repeatMode) playTrack(index);else nextBtn.onclick();};
-
-// Click audio to play
-document.querySelectorAll(".audio-link").forEach(a=>{
-    a.onclick = e=>{
+// ---------- CLICK AUDIO / VIDEO LINKS ----------
+document.querySelectorAll(".audio-link, .video-link").forEach(link => {
+    link.onclick = e => {
         e.preventDefault();
-        loadFolder();
-        playlistQueue = [...currentFolderFiles];
-        index = playlistQueue.findIndex(t=>t.url===a.dataset.src);
-        playTrack(index);
+        const clickedUrl = link.dataset.src;
+        const i = playlistQueue.findIndex(t => t.url === clickedUrl);
+        if (i >= 0) playTrack(i);
     };
 });
 
-// ---------- D3 Visualizer ----------
-const svg = d3.select("#visualizer");
-let audioCtx, analyser, srcNode, viz=false;
-const W=700,H=90;
-function setupViz(){
-    if(audioCtx) return;
-    audioCtx=new AudioContext();
-    analyser=audioCtx.createAnalyser();
-    analyser.fftSize=128;
-    srcNode=audioCtx.createMediaElementSource(player);
-    srcNode.connect(analyser);
-    analyser.connect(audioCtx.destination);
-}
-function draw(){
-    if(!viz) return;
-    requestAnimationFrame(draw);
-    const d=new Uint8Array(analyser.frequencyBinCount);
-    analyser.getByteFrequencyData(d);
-    const x=d3.scaleBand().domain(d3.range(d.length)).range([0,W]).padding(.2);
-    const y=d3.scaleLinear().domain([0,255]).range([H,0]);
-    const r=svg.selectAll("rect").data(d);
-    r.enter().append("rect").merge(r)
-        .attr("x",(_,i)=>x(i))
-        .attr("y",v=>y(v))
-        .attr("width",x.bandwidth())
-        .attr("height",v=>H-y(v))
-        .attr("fill","#4caf50");
-    r.exit().remove();
-}
-vizBtn.onclick=()=>{viz=!viz;svg.style("display",viz?"block":"none");if(viz){setupViz();audioCtx.resume();draw();}};
+// ---------- SHUFFLE BUTTON ----------
+shuffleBtn.onclick = () => {
+    shuffleMode = !shuffleMode;
+    shuffleBtn.classList.toggle("active");  // Optional: Add a visual cue for shuffle mode
+};
 
-// ---------- Waveform Visualizer ----------
-const canvas = document.getElementById("waveform");
-const ctx = canvas.getContext("2d");
-let waveformViz=false;
-function setupWave(){
-    if(!audioCtx) audioCtx = new AudioContext();
-    if(!analyser){
-        analyser = audioCtx.createAnalyser();
-        srcNode = audioCtx.createMediaElementSource(player);
-        srcNode.connect(analyser);
-        analyser.connect(audioCtx.destination);
+// ---------- REPEAT BUTTON ----------
+repeatBtn.onclick = () => {
+    repeatMode = !repeatMode;
+    repeatBtn.classList.toggle("active");  // Optional: Add a visual cue for repeat mode
+};
+
+// ---------- PLAY TRACK ----------
+async function playTrack(i) {
+    if (!playlistQueue.length) return;
+
+    index = (i + playlistQueue.length) % playlistQueue.length; // Normalize index
+    const track = playlistQueue[index];
+
+    if (track.isVideo) {
+        videoPlayer.src = track.url;
+        videoOverlay.style.display = "flex";
+        videoPlayer.play();
+    } else {
+        // Fetch artwork if needed
+        if (track.art === "/WebHost/static/music.png") {
+            try {
+                const search = encodeURIComponent(`${track.artist} ${track.title}`);
+                const res = await fetch(`https://itunes.apple.com/search?term=${search}&media=music&limit=1`);
+                const data = await res.json();
+                if (data.results && data.results.length > 0) {
+                    track.art = data.results[0].artworkUrl100.replace("100x100bb", "512x512bb");
+                }
+            } catch (e) { console.log("Artwork fetch failed:", e); }
+        }
+
+        art.src = track.art;
+        bgArt.src = track.art;
+        titleEl.textContent = track.title;
+        artistEl.textContent = track.artist;
+        bgTitle.textContent = track.title;
+        bgArtist.textContent = track.artist;
+
+        player.src = track.url;
+        player.play();
+        playPauseBtn.textContent = "⏸";
     }
-    canvas.width = 700;
-    canvas.height = 90;
+
+    renderQueue();
+    updateMediaSession(track);
 }
-function drawWave(){
-    if(!waveformViz) return;
-    requestAnimationFrame(drawWave);
-    const data = new Uint8Array(analyser.frequencyBinCount);
-    analyser.getByteTimeDomainData(data);
-    ctx.fillStyle="rgba(0,0,0,0.3)";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.strokeStyle="#4caf50";
-    ctx.lineWidth=2;
-    ctx.beginPath();
-    const slice = canvas.width / data.length;
-    data.forEach((v,i)=>{
-        const y = v / 128 * canvas.height/2;
-        if(i===0) ctx.moveTo(i*slice,y); else ctx.lineTo(i*slice,y);
+
+// ---------- MEDIA SESSION ----------
+function updateMediaSession(track) {
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: track.title,
+            artist: track.artist,
+            artwork: [{ src: track.art, sizes: "512x512", type: "image/png" }]
+        });
+        navigator.mediaSession.setActionHandler('play', () => { player.play(); playPauseBtn.textContent = "⏸"; });
+        navigator.mediaSession.setActionHandler('pause', () => { player.pause(); playPauseBtn.textContent = "▶"; });
+        navigator.mediaSession.setActionHandler('previoustrack', () => { prevBtn.onclick(); });
+        navigator.mediaSession.setActionHandler('nexttrack', () => { nextBtn.onclick(); });
+    }
+}
+
+// ---------- QUEUE ----------
+function renderQueue() {
+    queueList.innerHTML = "";
+    playlistQueue.forEach((t, i) => {
+        const div = document.createElement("div");
+        div.className = "queue-item";
+        div.textContent = `${t.artist} - ${t.title}`;
+        div.onclick = () => playTrack(i);
+        queueList.appendChild(div);
     });
-    ctx.stroke();
 }
-waveBtn.onclick=()=>{
-    waveformViz=!waveformViz;
-    canvas.style.display = waveformViz?"block":"none";
-    if(waveformViz){setupWave();audioCtx.resume();drawWave();}
+
+// ---------- CONTROLS ----------
+playPauseBtn.onclick = () => {
+    if (player.paused) {
+        player.play();
+        playPauseBtn.textContent = "⏸";
+    } else {
+        player.pause();
+        playPauseBtn.textContent = "▶";
+    }
 };
 
-
-
-// ---------- UPLOAD FILES ----------
-const currentPath = new URLSearchParams(window.location.search).get("path") || "";
-const uploadFilesInput = document.getElementById("uploadFiles");
-uploadFilesInput.onchange = ()=>{
-    const form = new FormData();
-    for(const f of uploadFilesInput.files) form.append("files", f);
-    form.append("path", decodeURIComponent(currentPath));
-    fetch("/upload",{method:"POST",body:form}).then(r=>r.json()).then(()=>location.reload());
+nextBtn.onclick = () => {
+    if (shuffleMode) {
+        playTrack(Math.floor(Math.random() * playlistQueue.length)); // Play a random track
+    } else {
+        let nextIndex = index + 1;
+        if (nextIndex >= playlistQueue.length) {
+            if (repeatMode) {
+                nextIndex = 0;  // Loop back to the first track
+            } else {
+                return;  // End of playlist if not in repeat mode
+            }
+        }
+        playTrack(nextIndex);
+    }
 };
 
-// Initial load
+prevBtn.onclick = () => {
+    let prevIndex = index - 1;
+    if (prevIndex < 0) {
+        prevIndex = playlistQueue.length - 1;  // Loop to the last track
+    }
+    playTrack(prevIndex);
+};
+
+// ---------- VIDEO ----------
+closeVideo.onclick = () => { videoPlayer.pause(); videoOverlay.style.display = "none"; videoPlayer.src = ""; };
+fullscreenVideo.onclick = () => { if (videoPlayer.requestFullscreen) videoPlayer.requestFullscreen(); };
+
+// ---------- TIME & PROGRESS ----------
+function formatTime(sec) {
+    if (!sec || isNaN(sec)) return "0:00";
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+}
+
+player.ontimeupdate = () => {
+    if (player.duration) {
+        progressBar.value = (player.currentTime / player.duration) * 100;
+        currentTimeEl.textContent = formatTime(player.currentTime);
+    }
+};
+
+player.onloadedmetadata = () => {
+    durationEl.textContent = formatTime(player.duration);
+};
+
+progressBar.oninput = () => {
+    if (player.duration) player.currentTime = (progressBar.value / 100) * player.duration;
+};
+
+volume.oninput = () => {
+    player.volume = volume.value;
+};
+
+// ---------- SEARCH ----------
+function filterItems() {
+    const query = document.getElementById('search').value.toLowerCase();
+    document.querySelectorAll('#items a').forEach(item => {
+        item.style.display = item.textContent.toLowerCase().includes(query) ? 'block' : 'none';
+    });
+}
+
+// ---------- AUTO PLAY NEXT TRACK ----------
+player.onended = () => {
+    if (repeatMode) {
+        playTrack(index);  // Replay the current track (if repeat is enabled)
+    } else {
+        nextBtn.onclick();  // Proceed to the next track
+    }
+};
+
+// ---------- INIT ----------
 loadFolder();
 </script>
-
 </body>
 </html>
 
@@ -617,7 +1093,7 @@ HTML_SIGNIN_PAGE = """
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <img src="WebHost/static/chronos.svg" alt="Chronos Logo" style="width: 100%; height: auto;">
 
-<link rel="icon" href="/static/logo.svg" type="image/svg+xml">
+<link rel="icon" type="image/x-icon" href="/WebHost/static/logo.ico">
 
 <style>
 *{
@@ -859,6 +1335,7 @@ main{
     <p style="color:red;">{{ error }}</p>
 </form>
 
+
 <!-- REGISTER -->
 <form class="form form-register" method="POST">
     <h2 class="form-title">Register</h2>
@@ -918,7 +1395,7 @@ HTML_MAIN_PAGE = """
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" href="/static/logo.svg" type="image/svg+xml">
+<link rel="icon" type="image/x-icon" href="/WebHost/static/logo.ico">
 
 <style>
 :root {
@@ -1057,7 +1534,7 @@ upload_PAGE = """
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="icon" href="/static/logo.svg" type="image/svg+xml">
+<link rel="icon" type="image/x-icon" href="/WebHost/static/logo.ico">
 <img src="WebHost/static/chronos.svg" alt="Chronos Logo" style="width:100%;height:auto;">
 
 <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -3056,7 +3533,7 @@ Bconnect_PAGE = """
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <img src="WebHost/static/chronos.svg" alt="Chronos Logo" style="width: 100%; height: auto;">
 
-<link rel="icon" href="/static/logo.svg" type="image/svg+xml">
+<link rel="icon" type="image/x-icon" href="/WebHost/static/logo.ico">
 
 <style>
 body {
@@ -3165,6 +3642,365 @@ button:hover {
 </html>
 """
 
+toast = """
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Flying Toasters Screensaver | After Dark in CSS</title>
+  <meta name="description" content="Experience Flying Toasters, After Dark's most popular Mac screensaver of the 1990s, reinterpreted using modern CSS.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="shortcut icon" href="/WebHost/static/logo.ico" />
+  <link rel="stylesheet" href="base.css">
+  <style>
+
+    .toaster {
+      position: absolute;
+      width: 64px;
+      height: 64px;
+      background-image: url("/WebHost/static/toaster-sprite.gif");
+    }
+    .toast {
+      position: absolute;
+      width: 64px;
+      height: 64px;
+      background-image: url("/WebHost/static/toast1.gif");
+    }
+
+    /**
+     * Toaster Animations
+     *
+     * There are several kinds of toaster animations, marked as t1, t2, & t3.
+     *
+     * T1 is fastest speed
+     * T2 is mid speed & flaps out of sequence with T1
+     * T3 is the common speed
+     * T4 is a delayed batch going at the fastest speed
+     * T5, T6, T7, T8, & T9 are a delayed batch of toasters going at the common speed
+     */
+    .t1 {
+      -webkit-animation: flap .2s steps(4) infinite alternate, fly 10s linear infinite;
+         -moz-animation: flap .2s steps(4) infinite alternate, fly 10s linear infinite;
+          -ms-animation: flap .2s steps(4) infinite alternate, fly 10s linear infinite;
+           -o-animation: flap .2s steps(4) infinite alternate, fly 10s linear infinite;
+              animation: flap .2s steps(4) infinite alternate, fly 10s linear infinite;
+    }
+    .t2 {
+      -webkit-animation: flap .2s steps(4) infinite alternate-reverse, fly 16s linear infinite;
+         -moz-animation: flap .2s steps(4) infinite alternate-reverse, fly 16s linear infinite;
+          -ms-animation: flap .2s steps(4) infinite alternate-reverse, fly 16s linear infinite;
+           -o-animation: flap .2s steps(4) infinite alternate-reverse, fly 16s linear infinite;
+              animation: flap .2s steps(4) infinite alternate-reverse, fly 16s linear infinite;
+    }
+    .t3 {
+      -webkit-animation: flap .2s steps(4) infinite alternate, fly 24s linear infinite;
+         -moz-animation: flap .2s steps(4) infinite alternate, fly 24s linear infinite;
+          -ms-animation: flap .2s steps(4) infinite alternate, fly 24s linear infinite;
+           -o-animation: flap .2s steps(4) infinite alternate, fly 24s linear infinite;
+              animation: flap .2s steps(4) infinite alternate, fly 24s linear infinite;
+    }
+    .t4 {
+      -webkit-animation: flap .2s steps(4) infinite alternate, fly 10s 5s linear infinite;
+         -moz-animation: flap .2s steps(4) infinite alternate, fly 10s 5s linear infinite;
+          -ms-animation: flap .2s steps(4) infinite alternate, fly 10s 5s linear infinite;
+           -o-animation: flap .2s steps(4) infinite alternate, fly 10s 5s linear infinite;
+              animation: flap .2s steps(4) infinite alternate, fly 10s 5s linear infinite;
+    }
+    .t5 {
+      -webkit-animation: flap .2s steps(4) infinite alternate-reverse, fly 24s 4s linear infinite;
+         -moz-animation: flap .2s steps(4) infinite alternate-reverse, fly 24s 4s linear infinite;
+          -ms-animation: flap .2s steps(4) infinite alternate-reverse, fly 24s 4s linear infinite;
+           -o-animation: flap .2s steps(4) infinite alternate-reverse, fly 24s 4s linear infinite;
+              animation: flap .2s steps(4) infinite alternate-reverse, fly 24s 4s linear infinite;
+    }
+    .t6 {
+      -webkit-animation: flap .2s steps(4) infinite alternate, fly 24s 8s linear infinite;
+         -moz-animation: flap .2s steps(4) infinite alternate, fly 24s 8s linear infinite;
+          -ms-animation: flap .2s steps(4) infinite alternate, fly 24s 8s linear infinite;
+           -o-animation: flap .2s steps(4) infinite alternate, fly 24s 8s linear infinite;
+              animation: flap .2s steps(4) infinite alternate, fly 24s 8s linear infinite;
+    }
+    .t7 {
+      -webkit-animation: flap .2s steps(4) infinite alternate-reverse, fly 24s 12s linear infinite;
+         -moz-animation: flap .2s steps(4) infinite alternate-reverse, fly 24s 12s linear infinite;
+          -ms-animation: flap .2s steps(4) infinite alternate-reverse, fly 24s 12s linear infinite;
+           -o-animation: flap .2s steps(4) infinite alternate-reverse, fly 24s 12s linear infinite;
+              animation: flap .2s steps(4) infinite alternate-reverse, fly 24s 12s linear infinite;
+    }
+    .t8 {
+      -webkit-animation: flap .2s steps(4) infinite alternate, fly 24s 16s linear infinite;
+         -moz-animation: flap .2s steps(4) infinite alternate, fly 24s 16s linear infinite;
+          -ms-animation: flap .2s steps(4) infinite alternate, fly 24s 16s linear infinite;
+           -o-animation: flap .2s steps(4) infinite alternate, fly 24s 16s linear infinite;
+              animation: flap .2s steps(4) infinite alternate, fly 24s 16s linear infinite;
+    }
+    .t9 {
+      -webkit-animation: flap .2s steps(4) infinite alternate-reverse, fly 24s 20s linear infinite;
+         -moz-animation: flap .2s steps(4) infinite alternate-reverse, fly 24s 20s linear infinite;
+          -ms-animation: flap .2s steps(4) infinite alternate-reverse, fly 24s 20s linear infinite;
+           -o-animation: flap .2s steps(4) infinite alternate-reverse, fly 24s 20s linear infinite;
+              animation: flap .2s steps(4) infinite alternate-reverse, fly 24s 20s linear infinite;
+    }
+    /**
+     * Toast Animations
+     *
+     * There are several kinds of toaster animations, marked as ts1, ts2, & ts3.
+     *
+     * Tst1 is fast
+     * Tst2 is mid speed
+     * Tst3 is the common speed
+     * Tst4 is a delayed batch of toast going at the common speed
+     */
+    .tst1 {
+      -webkit-animation: fly 10s linear infinite;
+         -moz-animation: fly 10s linear infinite;
+          -ms-animation: fly 10s linear infinite;
+           -o-animation: fly 10s linear infinite;
+              animation: fly 10s linear infinite;
+    }
+    .tst2 {
+      -webkit-animation: fly 16s linear infinite;
+         -moz-animation: fly 16s linear infinite;
+          -ms-animation: fly 16s linear infinite;
+           -o-animation: fly 16s linear infinite;
+              animation: fly 16s linear infinite;
+    }
+    .tst3 {
+      -webkit-animation: fly 24s linear infinite;
+         -moz-animation: fly 24s linear infinite;
+          -ms-animation: fly 24s linear infinite;
+           -o-animation: fly 24s linear infinite;
+              animation: fly 24s linear infinite;
+    }
+    .tst4 {
+      -webkit-animation: fly 24s 12s linear infinite;
+         -moz-animation: fly 24s 12s linear infinite;
+          -ms-animation: fly 24s 12s linear infinite;
+           -o-animation: fly 24s 12s linear infinite;
+              animation: fly 24s 12s linear infinite;
+    }
+
+    /**
+     * Starting positions of objects (both toast & toasters).
+     *  - There is a different position for each object to prevent overlapping.
+     *  - We use percentages in order to accommodate for all window dimensions.
+     *  - Use -6% as the smallest amount for remaining off-screen.
+     *  - Organized into reverse "L" shaped batches to keep a constant flow.
+     */
+    /* Batch 1 (-10% to -20%) */
+    /* Top edge, from right to left */
+    .p6 { right: -2%; top: -17%; }
+    .p7 { right: 10%; top: -19%; }
+    .p8 { right: 20%; top: -18%; }
+    .p9 { right: 30%; top: -20%; }
+    .p10 { right: 40%; top: -21%; }
+    .p11 { right: 50%; top: -18%; }
+    .p12 { right: 60%; top: -20%; }
+    /* Right side, from top to bottom */
+    .p13 { right: -17%; top: 10%; }
+    .p14 { right: -19%; top: 20%; }
+    .p15 { right: -21%; top: 30%; }
+    .p16 { right: -23%; top: 50%; }
+    .p17 { right: -25%; top: 70%; }
+
+    /* Batch 2 (-20% to -40%) */
+    /* Top edge, from right to left */
+    .p18 { right: 0%; top: -26%; }
+    .p19 { right: 10%; top: -20%; }
+    .p20 { right: 20%; top: -36%; }
+    .p21 { right: 30%; top: -24%; }
+    .p22 { right: 40%; top: -33%; }
+    .p23 { right: 60%; top: -40%; }
+    /* Right side, from top to bottom */
+    .p24 { right: -26%; top: 10%; }
+    .p25 { right: -36%; top: 30%; }
+    .p26 { right: -29%; top: 50%; }
+
+    /* Batch 3 (-40% to -60%)*/
+    /* Top edge, from right to left */
+    .p27 { right: 0; top: -46%; }
+    .p28 { right: 10%; top: -56%; }
+    .p29 { right: 20%; top: -49%; }
+    .p30 { right: 30%; top: -60%; }
+    /* Right side, from top to bottom */
+    .p31 { right: -46%; top: 10%; }
+    .p32 { right: -56%; top: 20%; }
+    .p33 { right: -49%; top: 30%; }
+
+    /* Flapping animation */
+    @-webkit-keyframes flap {
+     from { background-position:    0px; }
+       to { background-position: -256px; }
+    }
+    @-moz-keyframes flap {
+       from { background-position:    0px; }
+         to { background-position: -256px; }
+    }
+    @-o-keyframes flap {
+       from { background-position:    0px; }
+         to { background-position: -256px; }
+    }
+    @keyframes flap {
+       from { background-position:    0px; }
+         to { background-position: -256px; }
+    }
+
+    /* Gliding animation using translate */
+    /* Moving 1600px, to accomodate for large screens */
+    @-webkit-keyframes fly {
+      from {
+        -webkit-transform: translate(0, 0);
+        -moz-transform: translate(0, 0);
+        -o-transform: translate(0, 0);
+        -ms-transform: translate(0, 0);
+        transform: translate(0, 0);
+      }
+      to {
+        -webkit-transform: translate(-1600px, 1600px);
+        -moz-transform: translate(-1600px, 1600px);
+        -o-transform: translate(-1600px, 1600px);
+        -ms-transform: translate(-1600px, 1600px);
+        transform: translate(-1600px, 1600px);
+      }
+    }
+    @-moz-keyframes fly {
+      from {
+        -webkit-transform: translate(0, 0);
+        -moz-transform: translate(0, 0);
+        -o-transform: translate(0, 0);
+        -ms-transform: translate(0, 0);
+        transform: translate(0, 0);
+      }
+      to {
+        -webkit-transform: translate(-1600px, 1600px);
+        -moz-transform: translate(-1600px, 1600px);
+        -o-transform: translate(-1600px, 1600px);
+        -ms-transform: translate(-1600px, 1600px);
+        transform: translate(-1600px, 1600px);
+      }
+    }
+    @-o-keyframes fly {
+      from {
+        -webkit-transform: translate(0, 0);
+        -moz-transform: translate(0, 0);
+        -o-transform: translate(0, 0);
+        -ms-transform: translate(0, 0);
+        transform: translate(0, 0);
+      }
+      to {
+        -webkit-transform: translate(-1600px, 1600px);
+        -moz-transform: translate(-1600px, 1600px);
+        -o-transform: translate(-1600px, 1600px);
+        -ms-transform: translate(-1600px, 1600px);
+        transform: translate(-1600px, 1600px);
+      }
+    }
+    @keyframes fly {
+      from {
+        -webkit-transform: translate(0, 0);
+        -moz-transform: translate(0, 0);
+        -o-transform: translate(0, 0);
+        -ms-transform: translate(0, 0);
+        transform: translate(0, 0);
+      }
+      to {
+        -webkit-transform: translate(-1600px, 1600px);
+        -moz-transform: translate(-1600px, 1600px);
+        -o-transform: translate(-1600px, 1600px);
+        -ms-transform: translate(-1600px, 1600px);
+        transform: translate(-1600px, 1600px);
+      }
+    }
+
+  </style>
+</head>
+<body>
+
+<button onclick="goFullScreen()">Go Fullscreen</button>
+
+<script>
+  function goFullScreen() {
+    const elem = document.documentElement; // Targets the entire page (<html> element)
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen();
+    } else if (elem.webkitRequestFullscreen) { /* Safari */
+      elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) { /* IE/Edge */
+      elem.msRequestFullscreen();
+    }
+  }
+</script>
+
+
+  <!-- First group of objects -->
+  <div class="toaster t1 p6"></div>
+  <div class="toaster t3 p7"></div>
+  <div class="toast tst1 p8"></div>
+  <div class="toaster t3 p9"></div>
+  <div class="toaster t1 p11"></div>
+  <div class="toaster t3 p12"></div>
+  <div class="toaster t2 p13"></div>
+  <div class="toast tst3 p14"></div>
+  <div class="toast tst2 p16"></div>
+  <div class="toaster t1 p17"></div>
+  <div class="toast tst2 p19"></div>
+  <div class="toast tst3 p20"></div>
+  <div class="toaster t2 p21"></div>
+  <div class="toast tst1 p24"></div>
+  <div class="toaster t1 p22"></div>
+  <div class="toast tst2 p26"></div>
+  <div class="toaster t1 p28"></div>
+  <div class="toast tst2 p30"></div>
+  <div class="toaster t2 p31"></div>
+  <div class="toaster t1 p32"></div>
+  <div class="toast tst3 p33"></div>
+
+  <!-- wave 1 of (fast delayed) objects -->
+  <div class="toaster t4 p27"></div>
+  <div class="toaster t4 p10"></div>
+  <div class="toaster t4 p25"></div>
+  <div class="toaster t4 p29"></div>
+
+  <!-- wave 2 of (delayed) objects -->
+  <div class="toaster t5 p15"></div>
+  <div class="toaster t5 p18"></div>
+  <div class="toaster t5 p22"></div>
+
+  <!-- wave 3 of (delayed) objects -->
+  <div class="toaster t6 p6"></div>
+  <div class="toaster t6 p11"></div>
+  <div class="toaster t6 p15"></div>
+  <div class="toaster t6 p19"></div>
+  <div class="toaster t6 p23"></div>
+
+  <!-- wave 5 of (delayed) objects -->
+  <div class="toast tst4 p10"></div>
+  <div class="toast tst4 p23"></div>
+  <div class="toast tst4 p15"></div>
+  <div class="toaster t7 p7"></div>
+  <div class="toaster t7 p12"></div>
+  <div class="toaster t7 p16"></div>
+  <div class="toaster t7 p20"></div>
+  <div class="toaster t7 p24"></div>
+
+  <!-- wave 6 of (delayed) objects -->
+  <div class="toaster t8 p8"></div>
+  <div class="toaster t8 p13"></div>
+  <div class="toaster t8 p17"></div>
+  <div class="toaster t8 p25"></div>
+
+  <!-- wave 7 of (delayed) objects -->
+  <div class="toaster t9 p14"></div>
+  <div class="toaster t9 p18"></div>
+  <div class="toaster t9 p21"></div>
+  <div class="toaster t9 p26"></div>
+
+</body>
+</html>
+
+
+"""
+
 
 # ---------------- FILE LISTING ---------------- #
 AUDIO_EXTENSIONS = (".mp3", ".wav", ".ogg", ".m4a", ".flac", ".m4p", ".wma")
@@ -3207,6 +4043,7 @@ def list_items(abs_path, rel_path):
                     "icon": "🎵",
                     "url": f"/view?path={encoded_path}",
                     "data_src": f"/view?path={encoded_path}",
+                    "data_art": "/WebHost/static/music.png",  # placeholder
                     "is_folder": False,
                     "is_audio": True,
                     "is_playlist": False
@@ -3233,15 +4070,33 @@ def list_items(abs_path, rel_path):
         print("Error reading folder:", e)
     return items
 
+def parse_artist_title(filename):
+    """Try to split 'Artist - Title.ext' from filename."""
+    base = filename.rsplit('.', 1)[0]
+    parts = base.split(' - ', 1)
+    if len(parts) == 2:
+        return parts[0].strip(), parts[1].strip()
+    return "", base.strip()
 
 
-def login_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        if "user" not in session:
-            return redirect("/signin")
-        return f(*args, **kwargs)
-    return decorated
+def get_itunes_artwork(artist, title):
+    """Query iTunes API for track artwork; return 600x600 URL or None."""
+    if not title:
+        return None
+    query = quote_plus(f"{artist} {title}".strip())
+    url = f"https://itunes.apple.com/search?term={query}&entity=song&limit=1"
+    try:
+        r = requests.get(url, timeout=4)
+        r.raise_for_status()
+        data = r.json()
+        results = data.get("results", [])
+        if results:
+            art100 = results[0].get("artworkUrl100")
+            if art100:
+                return art100.replace("100x100bb", "600x600bb")
+    except Exception:
+        pass
+    return None
 
 
 
@@ -3249,10 +4104,29 @@ def login_required(f):
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
+        # Check if login is disabled in the config
+        if config.get("login_disabled", False):
+            return f(*args, **kwargs)  # Skip login requirement if disabled
+
         if "user" not in session:
-            return redirect("/signin")
+            return redirect("/signin")  # Redirect to signin if not logged in
         return f(*args, **kwargs)
     return decorated
+    
+    
+@app.route("/admin/disable_login", methods=["POST"])
+#@login_required
+def disable_login():
+    config["login_disabled"] = True  # Disable login
+    save_config()  # Save the updated config
+    return redirect("/admin")  # Redirect to admin page
+
+@app.route("/admin/enable_login", methods=["POST"])
+#@login_required
+def enable_login():
+    config["login_disabled"] = False  # Enable login
+    save_config()  # Save the updated config
+    return redirect("/admin")  # Redirect to admin page
 
 # ----------------- SIGNIN / REGISTER -----------------
 @app.route("/signin", methods=["GET", "POST"])
@@ -3265,6 +4139,11 @@ def signin():
         name = request.form.get("name", "").strip()
 
         try:
+            if config.get("login_disabled", False):
+                # Automatically log in the user if login is disabled
+                session["user"] = email
+                return redirect("/")  # Redirect to main page
+
             if action == "login":
                 for user in config["users"]:
                     if user["email"] == email and user["password"] == password:
@@ -3286,7 +4165,6 @@ def signin():
             print("Signin error:", e)
             error = "Server error, check logs"
 
-    # This must be OUTSIDE the try/except block
     return render_template_string(HTML_SIGNIN_PAGE, error=error)
 
 
@@ -3349,7 +4227,7 @@ def serve_html(page_name):
 
 # ----------------- MAIN PAGE -----------------
 @app.route("/")
-@login_required
+#@login_required
 def main_page():
     return render_template_string(
         HTML_MAIN_PAGE,
@@ -3360,7 +4238,7 @@ def main_page():
     )
     
 @app.route("/Bconnect")
-@login_required
+#@login_required
 def Bconnect_page():
     return render_template_string(
         Bconnect_PAGE,
@@ -3371,7 +4249,7 @@ def Bconnect_page():
     )
     
 @app.route("/admin")
-@login_required
+#@login_required
 def admin_page():
     return render_template_string(
         admin_page_html,
@@ -3383,7 +4261,7 @@ def admin_page():
 
 
 @app.route("/blockpage")
-@login_required
+#@login_required
 def blockpage():
     MOD = int(request.args.get("MOD", 2))  # 2 = blocked, 3 = warning
     URL = request.args.get("URL", "example.com")
@@ -3407,7 +4285,7 @@ def blockpage():
 
 
 @app.route("/admin/reboot", methods=["POST"])
-@login_required
+#@login_required
 def reboot_server():
     if not request.is_json:
         return jsonify({"error": "Expected JSON"}), 400
@@ -3563,7 +4441,7 @@ def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route("/upload", methods=["GET"])
-@login_required
+#@login_required
 def upload_page():
     return render_template_string(
         upload_PAGE,
@@ -3573,9 +4451,18 @@ def upload_page():
         button_hover_color="#4caf50"
     )
 
+@app.route("/toast", methods=["GET"])
+#@login_required
+def toast_page():
+    return render_template_string(
+        toast,
+        main_title="toast",
+        background_color="#000000",
+    )
+
 # ---------------- UPLOAD ROUTE ----------------
 @app.route("/upload", methods=["POST"])
-@login_required
+#@login_required
 def upload():
 
     if "files" not in request.files:
@@ -3618,7 +4505,7 @@ def upload():
 
 
 @app.route("/view")
-@login_required
+#@login_required
 def view_file():
     rel_path = request.args.get("path", "")
     base_folder = "/mnt/sda1/shared/files"  # your files folder
@@ -3633,7 +4520,7 @@ def view_file():
 
 # ---------------- DASHBOARD / FILES -----------------
 @app.route("/files")
-@login_required
+#@login_required
 def files():
     base_folder = "/mnt/sda1/shared/files"
     rel_path = request.args.get("path", "").lstrip("/")  # remove leading slash
@@ -3687,7 +4574,7 @@ def chronos_svg():
 
     return send_file(svg_path, mimetype="image/svg+xml")
     
-@app.route("/WebHost/static/logo.svg")
+@app.route("/static/logo.svg")
 def logo_svg():
     svg_path = "/mnt/sda1/shared/WebHost/static/logo.svg"
 
@@ -3704,6 +4591,69 @@ def error_png():
         return "File not found", 404
 
     return send_file(svg_path, mimetype="image/png")
+    
+@app.route("/WebHost/static/music.png")
+def music_png():
+    svg_path = "/mnt/sda1/shared/WebHost/static/music.png"
+
+    if not os.path.exists(svg_path):
+        return "File not found", 404
+
+    return send_file(svg_path, mimetype="image/png")
+    
+@app.route("/WebHost/static/logo.ico")
+def logo_ico():
+    svg_path = "/mnt/sda1/shared/WebHost/static/logo.ico"
+
+    if not os.path.exists(svg_path):
+        return "File not found", 404
+
+    return send_file(svg_path, mimetype="image/ico")
+    
+@app.route("/WebHost/static/toaster-sprite.gif")
+def toaster_sprite():
+    svg_path = "/mnt/sda1/shared/WebHost/static/toaster-sprite.gif"
+
+    if not os.path.exists(svg_path):
+        return "File not found", 404
+
+    return send_file(svg_path, mimetype="image/gif")
+    
+@app.route("/WebHost/static/toast1.gif")
+def toast_sprite():
+    svg_path = "/mnt/sda1/shared/WebHost/static/toast1.gif"
+
+    if not os.path.exists(svg_path):
+        return "File not found", 404
+
+    return send_file(svg_path, mimetype="image/gif")
+    
+@app.route("/WebHost/static/toast0.gif")
+def toast0_sprite():
+    svg_path = "/mnt/sda1/shared/WebHost/static/toast0.gif"
+
+    if not os.path.exists(svg_path):
+        return "File not found", 404
+
+    return send_file(svg_path, mimetype="image/gif")
+    
+@app.route("/WebHost/static/toast2.gif")
+def toast2_sprite():
+    svg_path = "/mnt/sda1/shared/WebHost/static/toast2.gif"
+
+    if not os.path.exists(svg_path):
+        return "File not found", 404
+
+    return send_file(svg_path, mimetype="image/gif")
+    
+@app.route("/WebHost/static/toast3.gif")
+def toast3_sprite():
+    svg_path = "/mnt/sda1/shared/WebHost/static/toast3.gif"
+
+    if not os.path.exists(svg_path):
+        return "File not found", 404
+
+    return send_file(svg_path, mimetype="image/gif")
     
 @app.route("/WebHost/static/bg.svg")
 def bg_svg():
