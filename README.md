@@ -14,6 +14,11 @@ For Debian/Ubuntu:
 	wget https://raw.githubusercontent.com/robotdjd/chronos/main/Chronos_installer.py
 	sudo python3 Chronos_installer.py
 
+if you are having problems installing or need to update run the updater:
+
+	wget https://raw.githubusercontent.com/robotdjd/chronos/main/Chronos_updater.py
+	sudo python3 Chronos_updater.py
+
 commands
 
 start:
@@ -37,3 +42,9 @@ how to make custom pages:
 info page:
 
 	http://chronos.local/info
+
+toast
+
+	http://chronos.local/toast
+
+
