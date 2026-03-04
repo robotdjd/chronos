@@ -27,6 +27,8 @@ backend connect allows you to add and remove files from your Chronos webpage and
 note that it also allows you to access the core part of the server so be careful!!!
 if you want to add files that are visable from the page make sure the files you add go into the folder "files"
 
+<img width="875" height="625" alt="Chronos Control Panel V8 2_19_2026 4_50_00 PM" src="https://github.com/user-attachments/assets/19450215-d0eb-4f3a-b565-331906f15a3a" />
+
 commands
 
 start:
