@@ -1,0 +1,6 @@
+this is your main files view
+go to:
+https://github.com/robotdjd/chronos
+for more info
+
+!!this file can be deleted!!
